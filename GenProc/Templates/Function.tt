@@ -5,29 +5,54 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="name" type="System.String"  #>
 <#@ parameter name="parameters" type="GenProc.Parameter[]"  #>
+<#@ parameter name="procedure" type="System.String"  #>
 <#
 
 // Line spacing matters!
 // Don't put empty lines around this block
 
-StringBuilder sb = new StringBuilder();
-
-foreach(GenProc.Parameter p in parameters)
+Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenProc.Parameter p, StringBuilder sbp)
 {
-	Parameter paramList = new Parameter();
-	paramList.Session = new Dictionary<string, object>();
-	paramList.Session["type"] = p.Type;
-	paramList.Session["name"] = p.Name;
-	paramList.Session["def"] = p.Default;
-	paramList.Session["output"] = p.Output;
-	paramList.Initialize();
-	sb.Append(paramList.TransformText());
-	sb.Append(" ");
-}
+	if(p.Output)
+		sbp.Append("ref ");
+
+	sbp.Append(p.Type.Name).Append(" ").Append(p.Name.TrimStart('@'));
+
+	if(!String.IsNullOrEmpty(p.Default))
+	{
+		sbp.Append(" = ");
+		sbp.Append(p.Default);
+	}
+
+	return sbp;
+};
+
+StringBuilder sb = new StringBuilder();
+foreach(GenProc.Parameter p in parameters)
+	GenParam(p, sb).Append(", ");
 
 #>
 		public static SqlDataReader <#=name #>(<#=sb.ToString().TrimEnd(',', ' ') #>)
 		{
-			//
+			SqlConnection conn = new SqlConnection("");
+			SqlCommand cmd = new SqlCommand("<#=procedure #>", conn);
+			cmd.CommandType = CommandType.StoredProcedure;
+
+			try
+			{
+				conn.Open();
+				return cmd.ExecuteReader();
+			}
+			catch(Exception ex)
+			{
+				ErrorLogger.Log(ex);
+			}
+			finally
+			{
+				if(conn.IsOpen)
+					conn.Close();
+			}
+
+			return null;
 		}
 

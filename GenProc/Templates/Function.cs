@@ -18,7 +18,7 @@ namespace GenProc.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+    #line 1 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "11.0.0.0")]
     public partial class Function : FunctionBase
     {
@@ -29,26 +29,31 @@ namespace GenProc.Templates
         public virtual string TransformText()
         {
             
-            #line 8 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 9 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
 
 
 // Line spacing matters!
 // Don't put empty lines around this block
 
-StringBuilder sb = new StringBuilder();
-
-foreach(GenProc.Parameter p in parameters)
+Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenProc.Parameter p, StringBuilder sbp)
 {
-	Parameter paramList = new Parameter();
-	paramList.Session = new Dictionary<string, object>();
-	paramList.Session["type"] = p.Type;
-	paramList.Session["name"] = p.Name;
-	paramList.Session["def"] = p.Default;
-	paramList.Session["output"] = p.Output;
-	paramList.Initialize();
-	sb.Append(paramList.TransformText());
-	sb.Append(" ");
-}
+	if(p.Output)
+		sbp.Append("ref ");
+
+	sbp.Append(p.Type.Name).Append(" ").Append(p.Name.TrimStart('@'));
+
+	if(!String.IsNullOrEmpty(p.Default))
+	{
+		sbp.Append(" = ");
+		sbp.Append(p.Default);
+	}
+
+	return sbp;
+};
+
+StringBuilder sb = new StringBuilder();
+foreach(GenProc.Parameter p in parameters)
+	GenParam(p, sb).Append(", ");
 
 
             
@@ -56,23 +61,52 @@ foreach(GenProc.Parameter p in parameters)
             #line hidden
             this.Write("\t\tpublic static SqlDataReader ");
             
-            #line 29 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 35 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 29 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 35 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(sb.ToString().TrimEnd(',', ' ')));
             
             #line default
             #line hidden
-            this.Write(")\r\n\t\t{\r\n\t\t\t//\r\n\t\t}\r\n\r\n");
+            this.Write(")\r\n\t\t{\r\n\t\t\tSqlConnection conn = new SqlConnection(\"\");\r\n\t\t\tSqlCommand cmd = new S" +
+                    "qlCommand(\"");
+            
+            #line 38 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(procedure));
+            
+            #line default
+            #line hidden
+            this.Write(@""", conn);
+			cmd.CommandType = CommandType.StoredProcedure;
+
+			try
+			{
+				conn.Open();
+				return cmd.ExecuteReader();
+			}
+			catch(Exception ex)
+			{
+				ErrorLogger.Log(ex);
+			}
+			finally
+			{
+				if(conn.IsOpen)
+					conn.Close();
+			}
+
+			return null;
+		}
+
+");
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+        #line 1 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
 
 private string _nameField;
 
@@ -97,6 +131,19 @@ private global::GenProc.Parameter[] parameters
     get
     {
         return this._parametersField;
+    }
+}
+
+private string _procedureField;
+
+/// <summary>
+/// Access the procedure parameter of the template.
+/// </summary>
+private string procedure
+{
+    get
+    {
+        return this._procedureField;
     }
 }
 
@@ -165,6 +212,36 @@ if ((parametersValueAcquired == false))
         else
         {
             this._parametersField = ((global::GenProc.Parameter[])(data));
+        }
+    }
+}
+bool procedureValueAcquired = false;
+if (this.Session.ContainsKey("procedure"))
+{
+    if ((typeof(string).IsAssignableFrom(this.Session["procedure"].GetType()) == false))
+    {
+        this.Error("The type \'System.String\' of the parameter \'procedure\' did not match the type of t" +
+                "he data passed to the template.");
+    }
+    else
+    {
+        this._procedureField = ((string)(this.Session["procedure"]));
+        procedureValueAcquired = true;
+    }
+}
+if ((procedureValueAcquired == false))
+{
+    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("procedure");
+    if ((data != null))
+    {
+        if ((typeof(string).IsAssignableFrom(data.GetType()) == false))
+        {
+            this.Error("The type \'System.String\' of the parameter \'procedure\' did not match the type of t" +
+                    "he data passed to the template.");
+        }
+        else
+        {
+            this._procedureField = ((string)(data));
         }
     }
 }

@@ -75,11 +75,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Function.tt</DependentUpon>
     </Compile>
-    <Compile Include="Templates\Parameter.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Parameter.tt</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -94,10 +89,6 @@
     <None Include="Templates\Function.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>Function.cs</LastGenOutput>
-    </None>
-    <None Include="Templates\Parameter.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>Parameter.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup>

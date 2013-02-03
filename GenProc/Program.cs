@@ -104,6 +104,7 @@ namespace GenProc
 	{
 		public string[] Path;
 		public string Name;
+		public string Original;
 		public List<Parameter> Parameters;
 
 		private Procedure()
@@ -115,6 +116,8 @@ namespace GenProc
 		public Procedure(string full)
 			: this()
 		{
+			Original = full;
+
 			if (full.Substring(0, 2) == "p_")
 				full = full.Substring(2);
 
@@ -129,13 +132,6 @@ namespace GenProc
 
 			Path = parts.Take(parts.Length - 1).ToArray();
 			Name = parts.Last();
-		}
-
-		public Procedure(string[] path, string name)
-			: this()
-		{
-			Path = path;
-			Name = name;
 		}
 	}
 
@@ -224,6 +220,7 @@ namespace GenProc
 				func.Session = new Dictionary<string, object>();
 				func.Session["name"] = proc.Name;
 				func.Session["parameters"] = proc.Parameters.ToArray();
+				func.Session["procedure"] = proc.Original;
 				func.Initialize();
 				funcs.Append(func.TransformText());
 			}

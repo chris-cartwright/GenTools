@@ -1,0 +1,20 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ parameter name="namespace" type="System.String" #>
+<#@ parameter name="className" type="System.String"  #>
+<#@ parameter name="functions" type="System.String"  #>
+
+using System;
+using System.Sql;
+using System.Collections;
+
+namespace <#=namespace #>
+{
+	public static class <#=className #>
+	{
+		<#=functions.Trim() #>
+	}
+}

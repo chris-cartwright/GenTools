@@ -12,6 +12,7 @@ namespace GenProc.Templates
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using System.Reflection;
     using System;
     
     /// <summary>
@@ -28,23 +29,37 @@ namespace GenProc.Templates
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\nusing System;\r\nusing System.Sql;\r\nusing System.Collections;\r\n\r\nnamespace ");
+            this.Write("\r\n/*\r\n\r\nGenerated using GenProc Version ");
+            
+            #line 13 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Assembly.GetExecutingAssembly().GetName().Version));
+            
+            #line default
+            #line hidden
+            this.Write("\r\nGenerated on ");
             
             #line 14 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(DateTime.Now.ToString("dd MMM HH:mm:ss")));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n\r\n*/\r\n\r\nusing System;\r\nusing System.Sql;\r\n\r\nnamespace ");
+            
+            #line 21 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(@namespace));
             
             #line default
             #line hidden
             this.Write("\r\n{\r\n\tpublic static class ");
             
-            #line 16 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            #line 23 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("\r\n\t{\r\n\t\t");
             
-            #line 18 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            #line 25 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(functions.Trim()));
             
             #line default

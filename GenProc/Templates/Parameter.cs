@@ -28,48 +28,47 @@ namespace GenProc.Templates
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n");
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
  if(output) { 
             
             #line default
             #line hidden
             this.Write("ref ");
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
  } 
             
             #line default
             #line hidden
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(type.Name));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(name.TrimStart('@')));
             
             #line default
             #line hidden
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
  if(!String.IsNullOrEmpty(def)) { 
             
             #line default
             #line hidden
             this.Write(" = ");
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def));
             
             #line default
             #line hidden
             
-            #line 11 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Parameter.tt"
  } 
             
             #line default

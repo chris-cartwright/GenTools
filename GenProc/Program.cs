@@ -207,7 +207,11 @@ namespace GenProc
 			if (branch.Leaves.Count == 0)
 				return;
 
-			string file = Path.Combine(path, branch.Name) + ".cs";
+			string className = branch.Name;
+			if (branch.Branches.Count > 0)
+				className = Properties.Settings.Default.CollisionPrefix + className;
+
+			string file = Path.Combine(path, className) + ".cs";
 			Console.WriteLine("{0}File: {1}", new String('\t', depth), file);
 			StreamWriter tw = new StreamWriter(File.Create(file));
 
@@ -227,8 +231,8 @@ namespace GenProc
 			Templates.File f = new Templates.File();
 			f.Session = new Dictionary<string, object>();
 			f.Session["namespace"] = node;
-			f.Session["className"] = branch.Name;
 			f.Session["functions"] = funcs.ToString();
+			f.Session["className"] = className;
 			f.Initialize();
 			tw.Write(f.TransformText());
 

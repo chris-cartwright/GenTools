@@ -3,13 +3,20 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Reflection" #>
 <#@ parameter name="namespace" type="System.String" #>
 <#@ parameter name="className" type="System.String"  #>
 <#@ parameter name="functions" type="System.String"  #>
 
+/*
+
+Generated using GenProc Version <#=Assembly.GetExecutingAssembly().GetName().Version #>
+Generated on <#=DateTime.Now.ToString("dd MMM HH:mm:ss") #>
+
+*/
+
 using System;
 using System.Sql;
-using System.Collections;
 
 namespace <#=namespace #>
 {

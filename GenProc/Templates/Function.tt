@@ -21,7 +21,7 @@ foreach(GenProc.Parameter p in parameters)
 	paramList.Session["def"] = p.Default;
 	paramList.Session["output"] = p.Output;
 	paramList.Initialize();
-	sb.Append(paramList.TransformText().Trim());
+	sb.Append(paramList.TransformText());
 	sb.Append(" ");
 }
 

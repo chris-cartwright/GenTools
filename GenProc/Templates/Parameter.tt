@@ -7,5 +7,4 @@
 <#@ parameter name="name" type="System.String"  #>
 <#@ parameter name="def" type="System.String"  #>
 <#@ parameter name="output" type="System.Boolean"  #>
-
 <# if(output) { #>ref <# } #><#=type.Name #> <#=name.TrimStart('@') #><# if(!String.IsNullOrEmpty(def)) { #> = <#=def #><# } #>,

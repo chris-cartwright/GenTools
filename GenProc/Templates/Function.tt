@@ -38,6 +38,9 @@ foreach(GenProc.Parameter p in parameters)
 			SqlCommand cmd = new SqlCommand("<#=procedure #>", conn);
 			cmd.CommandType = CommandType.StoredProcedure;
 
+			<# foreach(GenProc.Parameter p in parameters) { #>cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.Name.TrimStart('@') #>)<# if(p.Output) { #>.Output = true<# } #>;
+			<# } #>
+
 			try
 			{
 				conn.Open();

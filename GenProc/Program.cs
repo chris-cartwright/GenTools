@@ -139,12 +139,22 @@ namespace GenProc
 	{
 		static void Main(string[] args)
 		{
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
+
 			(new Program()).Run();
+
+			sw.Stop();
+			Console.WriteLine("Total time: {0}", sw.Elapsed);
 		}
 
 		public void Run()
 		{
-			Console.WriteLine("GenProc version {0}\n", Assembly.GetExecutingAssembly().GetName().Version);
+			Console.WriteLine(
+				"\nGenProc version {0}-{1}\n",
+				Assembly.GetExecutingAssembly().GetName().Version,
+				((GitRevisionAttribute)Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(GitRevisionAttribute))).Revision
+			);
 			Console.WriteLine("Using connection: {0}", Properties.Settings.Default.DatabaseConnection);
 			Console.WriteLine("Database: {0}", Properties.Settings.Default.DatabaseName);
 
@@ -180,7 +190,6 @@ namespace GenProc
 
 			conn.Close();
 
-			//string path = Path.GetFullPath(Properties.Settings.Default.OutputDirectory);
 			string path = Properties.Settings.Default.OutputDirectory;
 
 			// Clean out old code

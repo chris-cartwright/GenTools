@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenProc", "GenProc\GenProc.csproj", "{D07156DF-621A-4303-8B76-3E1F79002C2E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitVersion", "GitVersion\GitVersion.csproj", "{B40C06B3-399F-45D2-B441-17225F716363}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{D07156DF-621A-4303-8B76-3E1F79002C2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D07156DF-621A-4303-8B76-3E1F79002C2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D07156DF-621A-4303-8B76-3E1F79002C2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B40C06B3-399F-45D2-B441-17225F716363}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B40C06B3-399F-45D2-B441-17225F716363}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B40C06B3-399F-45D2-B441-17225F716363}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B40C06B3-399F-45D2-B441-17225F716363}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

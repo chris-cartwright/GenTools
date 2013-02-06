@@ -43,23 +43,92 @@ namespace GenProc.Templates
             
             #line default
             #line hidden
-            this.Write("\r\n\r\n*/\r\n\r\nusing System;\r\nusing System.Sql;\r\n\r\nnamespace ");
+            this.Write("\r\n\r\n*/\r\n\r\nusing System;\r\nusing System.Data.SqlClient;\r\nusing System.Sql;\r\n\r\nnames" +
+                    "pace ");
             
-            #line 21 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            #line 22 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(@namespace));
             
             #line default
             #line hidden
-            this.Write("\r\n{\r\n\tpublic static class ");
+            this.Write(@"
+{
+	public static class WrappedProcedure
+	{
+		private SqlCommand _cmd;
+
+		public WrappedProcedure(SqlCommand cmd)
+		{
+			_cmd = cmd;
+		}
+
+		public SqlDataReader Reader()
+		{
+			try
+			{
+				_cmd.Connection.Open();
+				return _cmd.ExecuteReader();
+			}
+			catch(Exception)
+			{
+				if(_cmd.Connection.State == ConnectionState.Open)
+					_cmd.Close();
+
+				ErrorLogger.Log(ex);
+			}
+
+			return null;
+		}
+
+		public int NonQuery()
+		{
+			try
+			{
+				_cmd.Connection.Open();
+				return _cmd.ExecuteNonQuery();
+			}
+			catch(Exception)
+			{
+				ErrorLogger.Log(ex);
+			}
+			finally
+			{
+				if(_cmd.Connection.State == ConnectionState.Open)
+					_cmd.Close();
+			}
+
+			return -1;
+		}
+
+		public T Scalar<T>() where T: IConvertible
+		{
+			try
+			{
+				_cmd.Connection.Open();
+				return Convert.ChangeType(_cmd.ExecuteScalar(), typeof(T));
+			}
+			catch(Exception)
+			{
+				return default(T);
+			}
+			finally
+			{
+				if(_cmd.Connection.State == ConnectionState.Open)
+					_cmd.Close();
+			}
+		}
+	}
+
+	public static class ");
             
-            #line 23 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            #line 90 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
             this.Write("\r\n\t{\r\n\t\t");
             
-            #line 25 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+            #line 92 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(functions.Trim()));
             
             #line default

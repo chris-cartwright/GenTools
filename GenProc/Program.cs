@@ -142,13 +142,13 @@ namespace GenProc
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 
-			(new Program()).Run();
+			(new Program()).Run(sw);
 
 			sw.Stop();
 			Console.WriteLine("Total time: {0}", sw.Elapsed);
 		}
 
-		public void Run()
+		public void Run(Stopwatch sw)
 		{
 			Console.WriteLine(
 				"\nGenProc version {0}-{1}\n",
@@ -190,6 +190,8 @@ namespace GenProc
 
 			conn.Close();
 
+			Console.WriteLine("Done database stuff: {0}", sw.Elapsed);
+
 			string path = Properties.Settings.Default.OutputDirectory;
 
 			// Clean out old code
@@ -203,7 +205,7 @@ namespace GenProc
 		{
 			node = node.TrimStart('.');
 
-			Console.WriteLine("{0}Path: {1}", new String('\t', depth), path);
+			//Console.WriteLine("{0}Path: {1}", new String('\t', depth), path);
 			Directory.CreateDirectory(path);
 
 			foreach (Branch<Procedure> brch in branch.Branches)
@@ -217,13 +219,13 @@ namespace GenProc
 				className = Properties.Settings.Default.CollisionPrefix + className;
 
 			string file = Path.Combine(path, className) + ".cs";
-			Console.WriteLine("{0}File: {1}", new String('\t', depth), file);
+			//Console.WriteLine("{0}File: {1}", new String('\t', depth), file);
 			StreamWriter tw = new StreamWriter(File.Create(file));
 
 			StringBuilder funcs = new StringBuilder();
 			foreach (Procedure proc in branch.Leaves.OrderBy(p => p.Name))
 			{
-				Console.WriteLine("{0}Procedure: {1}", new String('\t', depth), proc.Name);
+				//Console.WriteLine("{0}Procedure: {1}", new String('\t', depth), proc.Name);
 
 				Templates.Function func = new Templates.Function();
 				func.Session = new Dictionary<string, object>();

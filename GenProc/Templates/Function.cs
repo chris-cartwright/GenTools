@@ -18,7 +18,7 @@ namespace GenProc.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+    #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "11.0.0.0")]
     public partial class Function : FunctionBase
     {
@@ -29,7 +29,7 @@ namespace GenProc.Templates
         public virtual string TransformText()
         {
             
-            #line 9 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 9 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
 
 
 // Line spacing matters!
@@ -52,23 +52,23 @@ Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenPro
 };
 
 StringBuilder sb = new StringBuilder();
-foreach(GenProc.Parameter p in parameters)
+foreach(GenProc.Parameter p in parameters.OrderBy(p => !String.IsNullOrEmpty(p.Default)))
 	GenParam(p, sb).Append(", ");
 
 
             
             #line default
             #line hidden
-            this.Write("\t\tpublic static SqlDataReader ");
+            this.Write("\t\tpublic static WrappedProcedure ");
             
-            #line 35 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 35 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 35 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 35 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(sb.ToString().TrimEnd(',', ' ')));
             
             #line default
@@ -76,37 +76,58 @@ foreach(GenProc.Parameter p in parameters)
             this.Write(")\r\n\t\t{\r\n\t\t\tSqlConnection conn = new SqlConnection(\"\");\r\n\t\t\tSqlCommand cmd = new S" +
                     "qlCommand(\"");
             
-            #line 38 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            #line 38 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(procedure));
             
             #line default
             #line hidden
-            this.Write(@""", conn);
-			cmd.CommandType = CommandType.StoredProcedure;
-
-			try
-			{
-				conn.Open();
-				return cmd.ExecuteReader();
-			}
-			catch(Exception ex)
-			{
-				ErrorLogger.Log(ex);
-			}
-			finally
-			{
-				if(conn.IsOpen)
-					conn.Close();
-			}
-
-			return null;
-		}
-
-");
+            this.Write("\", conn);\r\n\t\t\tcmd.CommandType = CommandType.StoredProcedure;\r\n\r\n\t\t\t");
+            
+            #line 41 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+ foreach(GenProc.Parameter p in parameters) { 
+            
+            #line default
+            #line hidden
+            this.Write("cmd.Parameters.AddWithValue(\"");
+            
+            #line 41 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(p.Name));
+            
+            #line default
+            #line hidden
+            this.Write("\", ");
+            
+            #line 41 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(p.Name.TrimStart('@')));
+            
+            #line default
+            #line hidden
+            this.Write(")");
+            
+            #line 41 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+ if(p.Output) { 
+            
+            #line default
+            #line hidden
+            this.Write(".Output = true");
+            
+            #line 41 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+ } 
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n\t\t\t");
+            
+            #line 42 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+ } 
+            
+            #line default
+            #line hidden
+            this.Write("\r\n\t\t\treturn new WrappedProcedure(cmd);\r\n\t\t}\r\n\r\n");
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 1 "C:\Users\Christopher\Documents\Visual Studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
+        #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Function.tt"
 
 private string _nameField;
 

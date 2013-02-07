@@ -8,6 +8,6 @@
 <#@ parameter name="classes" type="System.String" #>
 	public static class <#=className #>
 	{
-		<# if(classes.Length > 0) { #><#=classes #>
+		<# if(classes != null && classes.Length > 0) { #><#=classes #>
 		<# } #><#=functions.Trim() #>
 	}

@@ -137,6 +137,8 @@ namespace GenProc
 
 	public class Program
 	{
+		private static Properties.Settings Settings;
+
 		static void Main(string[] args)
 		{
 			Stopwatch sw = new Stopwatch();
@@ -150,6 +152,8 @@ namespace GenProc
 
 		public void Run(Stopwatch sw)
 		{
+			Settings = Properties.Settings.Default;
+
 			TimeSpan inserts = new TimeSpan();
 
 			Console.WriteLine(
@@ -157,13 +161,13 @@ namespace GenProc
 				Assembly.GetExecutingAssembly().GetName().Version,
 				((GitRevisionAttribute)Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(GitRevisionAttribute))).Revision
 			);
-			Console.WriteLine("Using connection: {0}", Properties.Settings.Default.DatabaseConnection);
-			Console.WriteLine("Database: {0}", Properties.Settings.Default.DatabaseName);
+			Console.WriteLine("Using connection: {0}", Settings.DatabaseConnection);
+			Console.WriteLine("Database: {0}", Settings.DatabaseName);
 
-			SqlConnection conn = new SqlConnection(Properties.Settings.Default.DatabaseConnection);
+			SqlConnection conn = new SqlConnection(Settings.DatabaseConnection);
 			conn.Open();
 
-			Branch<Procedure> trunk = new Branch<Procedure>(Properties.Settings.Default.MasterNamespace);
+			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
 
 			Server server = new Server(new ServerConnection(conn));
 			Database db = server.Databases[Properties.Settings.Default.DatabaseName];
@@ -197,16 +201,31 @@ namespace GenProc
 			Console.WriteLine("Done database stuff: {0}", sw.Elapsed);
 			Console.WriteLine("Time spent inserting: {0}", inserts);
 
-			string path = Properties.Settings.Default.OutputDirectory;
+			string path = Settings.OutputDirectory;
 
 			// Clean out old code
 			if(Directory.Exists(path))
 				Directory.Delete(path, true);
 
-			WriteCode(trunk, path, "");
+			if (Settings.Monolithic)
+			{
+				StringWriter str = new StringWriter();
+				WriteCodeMonolithic(str, trunk, true);
+
+				Templates.File f = new Templates.File();
+				f.Session = new Dictionary<string, object>();
+				f.Session["namespace"] = Settings.MasterNamespace;
+				f.Session["class"] = str.ToString();
+				f.Initialize();
+				StreamWriter writer = new StreamWriter(File.Open("Test.cs", FileMode.Create));
+				writer.Write(f.TransformText());
+				writer.Close();
+			}
+			else
+				WriteCodeMulti(trunk, path, "");
 		}
 
-		private void WriteCode(Branch<Procedure> branch, string path, string node, int depth = 0)
+		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
 		{
 			node = node.TrimStart('.');
 
@@ -214,7 +233,7 @@ namespace GenProc
 			Directory.CreateDirectory(path);
 
 			foreach (Branch<Procedure> brch in branch.Branches)
-				WriteCode(brch, Path.Combine(path, branch.Name), node + "." + branch.Name, depth + 1);
+				WriteCodeMulti(brch, Path.Combine(path, branch.Name), node + "." + branch.Name, depth + 1);
 
 			if (branch.Leaves.Count == 0)
 				return;
@@ -255,6 +274,42 @@ namespace GenProc
 			tw.Write(f.TransformText());
 
 			tw.Close();
+		}
+
+		private void WriteCodeMonolithic(TextWriter tw, Branch<Procedure> branch, bool first = false)
+		{
+			StringWriter classes = new StringWriter();
+			foreach (Branch<Procedure> brch in branch.Branches)
+				WriteCodeMonolithic(classes, brch);
+
+			if (first)
+			{
+				tw.Write(classes.ToString());
+				return;
+			}
+
+			StringBuilder funcs = new StringBuilder();
+			if (branch.Leaves.Count > 0)
+			{
+				foreach (Procedure proc in branch.Leaves.OrderBy(p => p.Name))
+				{
+					Templates.Function func = new Templates.Function();
+					func.Session = new Dictionary<string, object>();
+					func.Session["name"] = proc.Name;
+					func.Session["parameters"] = proc.Parameters.ToArray();
+					func.Session["procedure"] = proc.Original;
+					func.Initialize();
+					funcs.Append(func.TransformText());
+				}
+			}
+
+			Templates.Class c = new Templates.Class();
+			c.Session = new Dictionary<string, object>();
+			c.Session["functions"] = funcs.ToString();
+			c.Session["className"] = branch.Name;
+			c.Session["classes"] = classes.ToString();
+			c.Initialize();
+			tw.Write(c.TransformText());
 		}
 	}
 }

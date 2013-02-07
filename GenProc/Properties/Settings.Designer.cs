@@ -92,5 +92,17 @@ namespace GenProc.Properties {
                 this["CollisionPrefix"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool Monolithic {
+            get {
+                return ((bool)(this["Monolithic"]));
+            }
+            set {
+                this["Monolithic"] = value;
+            }
+        }
     }
 }

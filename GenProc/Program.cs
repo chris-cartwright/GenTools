@@ -150,6 +150,8 @@ namespace GenProc
 
 		public void Run(Stopwatch sw)
 		{
+			TimeSpan inserts = new TimeSpan();
+
 			Console.WriteLine(
 				"\nGenProc version {0}-{1}\n",
 				Assembly.GetExecutingAssembly().GetName().Version,
@@ -185,12 +187,15 @@ namespace GenProc
 					proc.Parameters.Add(p);
 				}
 
+				TimeSpan ts = sw.Elapsed;
 				trunk.Insert(proc.Path, proc);
+				inserts += sw.Elapsed - ts;
 			}
 
 			conn.Close();
 
 			Console.WriteLine("Done database stuff: {0}", sw.Elapsed);
+			Console.WriteLine("Time spent inserting: {0}", inserts);
 
 			string path = Properties.Settings.Default.OutputDirectory;
 
@@ -236,11 +241,16 @@ namespace GenProc
 				funcs.Append(func.TransformText());
 			}
 
+			Templates.Class c = new Templates.Class();
+			c.Session = new Dictionary<string, object>();
+			c.Session["functions"] = funcs.ToString();
+			c.Session["className"] = className;
+			c.Initialize();
+			
 			Templates.File f = new Templates.File();
 			f.Session = new Dictionary<string, object>();
 			f.Session["namespace"] = node;
-			f.Session["functions"] = funcs.ToString();
-			f.Session["className"] = className;
+			f.Session["class"] = c.TransformText();
 			f.Initialize();
 			tw.Write(f.TransformText());
 

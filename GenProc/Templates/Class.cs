@@ -12,16 +12,15 @@ namespace GenProc.Templates
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using System.Reflection;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+    #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Class.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "11.0.0.0")]
-    public partial class File : FileBase
+    public partial class Class : ClassBase
     {
 #line hidden
         /// <summary>
@@ -29,64 +28,49 @@ namespace GenProc.Templates
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n/*\r\n\r\nGenerated using GenProc Version ");
+            this.Write("\tpublic static class ");
             
-            #line 12 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Assembly.GetExecutingAssembly().GetName().Version));
-            
-            #line default
-            #line hidden
-            this.Write("\r\nGenerated on ");
-            
-            #line 13 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(DateTime.Now.ToString("dd MMM HH:mm:ss")));
+            #line 8 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Class.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(className));
             
             #line default
             #line hidden
-            this.Write("\r\n\r\n*/\r\n\r\nusing System;\r\nusing System.Data.SqlClient;\r\nusing System.Sql;\r\n\r\nnames" +
-                    "pace ");
+            this.Write("\r\n\t{\r\n\t\t");
             
-            #line 21 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(@namespace));
-            
-            #line default
-            #line hidden
-            this.Write("\r\n{\r\n");
-            
-            #line 23 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(@class));
+            #line 10 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Class.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(functions.Trim()));
             
             #line default
             #line hidden
-            this.Write("\r\n}\r\n");
+            this.Write("\r\n\t}\r\n");
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\File.tt"
+        #line 1 "C:\Users\Christopher\documents\visual studio 2012\Projects\GenProc\GenProc\Templates\Class.tt"
 
-private string _namespaceField;
+private string _classNameField;
 
 /// <summary>
-/// Access the namespace parameter of the template.
+/// Access the className parameter of the template.
 /// </summary>
-private string @namespace
+private string className
 {
     get
     {
-        return this._namespaceField;
+        return this._classNameField;
     }
 }
 
-private string _classField;
+private string _functionsField;
 
 /// <summary>
-/// Access the class parameter of the template.
+/// Access the functions parameter of the template.
 /// </summary>
-private string @class
+private string functions
 {
     get
     {
-        return this._classField;
+        return this._functionsField;
     }
 }
 
@@ -98,63 +82,63 @@ public virtual void Initialize()
 {
     if ((this.Errors.HasErrors == false))
     {
-bool namespaceValueAcquired = false;
-if (this.Session.ContainsKey("namespace"))
+bool classNameValueAcquired = false;
+if (this.Session.ContainsKey("className"))
 {
-    if ((typeof(string).IsAssignableFrom(this.Session["namespace"].GetType()) == false))
+    if ((typeof(string).IsAssignableFrom(this.Session["className"].GetType()) == false))
     {
-        this.Error("The type \'System.String\' of the parameter \'namespace\' did not match the type of t" +
+        this.Error("The type \'System.String\' of the parameter \'className\' did not match the type of t" +
                 "he data passed to the template.");
     }
     else
     {
-        this._namespaceField = ((string)(this.Session["namespace"]));
-        namespaceValueAcquired = true;
+        this._classNameField = ((string)(this.Session["className"]));
+        classNameValueAcquired = true;
     }
 }
-if ((namespaceValueAcquired == false))
+if ((classNameValueAcquired == false))
 {
-    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("namespace");
+    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("className");
     if ((data != null))
     {
         if ((typeof(string).IsAssignableFrom(data.GetType()) == false))
         {
-            this.Error("The type \'System.String\' of the parameter \'namespace\' did not match the type of t" +
+            this.Error("The type \'System.String\' of the parameter \'className\' did not match the type of t" +
                     "he data passed to the template.");
         }
         else
         {
-            this._namespaceField = ((string)(data));
+            this._classNameField = ((string)(data));
         }
     }
 }
-bool classValueAcquired = false;
-if (this.Session.ContainsKey("class"))
+bool functionsValueAcquired = false;
+if (this.Session.ContainsKey("functions"))
 {
-    if ((typeof(string).IsAssignableFrom(this.Session["class"].GetType()) == false))
+    if ((typeof(string).IsAssignableFrom(this.Session["functions"].GetType()) == false))
     {
-        this.Error("The type \'System.String\' of the parameter \'class\' did not match the type of the d" +
-                "ata passed to the template.");
+        this.Error("The type \'System.String\' of the parameter \'functions\' did not match the type of t" +
+                "he data passed to the template.");
     }
     else
     {
-        this._classField = ((string)(this.Session["class"]));
-        classValueAcquired = true;
+        this._functionsField = ((string)(this.Session["functions"]));
+        functionsValueAcquired = true;
     }
 }
-if ((classValueAcquired == false))
+if ((functionsValueAcquired == false))
 {
-    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("class");
+    object data = global::System.Runtime.Remoting.Messaging.CallContext.LogicalGetData("functions");
     if ((data != null))
     {
         if ((typeof(string).IsAssignableFrom(data.GetType()) == false))
         {
-            this.Error("The type \'System.String\' of the parameter \'class\' did not match the type of the d" +
-                    "ata passed to the template.");
+            this.Error("The type \'System.String\' of the parameter \'functions\' did not match the type of t" +
+                    "he data passed to the template.");
         }
         else
         {
-            this._classField = ((string)(data));
+            this._functionsField = ((string)(data));
         }
     }
 }
@@ -176,7 +160,7 @@ if ((classValueAcquired == false))
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "11.0.0.0")]
-    public class FileBase
+    public class ClassBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

@@ -86,7 +86,7 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>Class.cs</LastGenOutput>
     </None>
-    <None Include="Templates\Files\WrappedProcedure.cs" />
+    <Compile Include="Templates\Files\WrappedProcedure.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

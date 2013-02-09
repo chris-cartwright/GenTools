@@ -3,9 +3,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-<#@ parameter name="name" type="System.String"  #>
-<#@ parameter name="parameters" type="GenProc.Parameter[]"  #>
-<#@ parameter name="procedure" type="System.String"  #>
+<#@ parameter name="procedure" type="GenProc.Procedure"  #>
 <#
 
 // Line spacing matters!
@@ -13,14 +11,11 @@
 
 Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenProc.Parameter p, StringBuilder sbp)
 {
-	if(p.IsOutput)
-		sbp.Append("ref ");
-
 	sbp.Append(p.Type.Name);
-	if(p.IsNull && p.Type.IsValueType)
+	if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray)
 		sbp.Append("?");
 	
-	sbp.Append(" ").Append(p.Name.TrimStart('@').CleanKeyword());
+	sbp.Append(" ").Append(p.NameClean);
 
 	if(p.IsNull)
 		sbp.Append(" = null");
@@ -29,23 +24,40 @@ Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenPro
 		sbp.Append(" = ");
 		sbp.Append(p.Default);
 	}
+	else if(p.IsOutput)
+	{
+		sbp.Append(" = null");
+	}
 
 	return sbp;
 };
 
 StringBuilder sb = new StringBuilder();
-foreach(GenProc.Parameter p in parameters.OrderBy(p => !String.IsNullOrEmpty(p.Default)))
+foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).OrderBy(p => !String.IsNullOrEmpty(p.Default)))
 	GenParam(p, sb).Append(", ");
 
 #>
-		public static WrappedProcedure <#=name.CleanKeyword() #>(<#=sb.ToString().TrimEnd(',', ' ') #>)
+		public class <#=procedure.NameClean #> : WrappedProcedure
 		{
-			SqlConnection conn = new SqlConnection("");
-			SqlCommand cmd = new SqlCommand("<#=procedure #>", conn);
-			cmd.CommandType = CommandType.StoredProcedure;
-
-			<# foreach(GenProc.Parameter p in parameters) { #>cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.Name.TrimStart('@').CleanKeyword() #>)<# if(p.IsOutput) { #>.Direction = ParameterDirection.Output<# } #>;
+			<# foreach(GenProc.Parameter p in procedure.Parameters) { #>public <#=p.Type.Name #><# if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray) { #>?<# } #> <#=p.NameClean #>;
 			<# } #>
 
-			return new WrappedProcedure(cmd);
+			protected override void AssignOutputs()
+			{
+				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => p.IsOutput)) { #><#=p.NameClean #> = (<#=p.Type.Name #>)_cmd.Parameters["<#=p.Name #>"].Value;
+				<# } #>
+			}
+
+			public <#=procedure.NameClean #>(<#=sb.ToString().TrimEnd(',', ' ') #>)
+			{
+				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput)) { #>this.<#=p.NameClean #> = <#=p.NameClean #>;
+				<# } #>
+
+				SqlConnection conn = new SqlConnection("");
+				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
+				_cmd.CommandType = CommandType.StoredProcedure;
+
+				<# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.NameClean #>)<# if(p.IsOutput) { #>.Direction = ParameterDirection.Output<# } #>;
+				<# } #>
+			}
 		}

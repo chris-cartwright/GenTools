@@ -104,6 +104,7 @@ namespace GenProc
 		};
 
 		public string Name;
+		public string NameClean;
 		public Type Type;
 		public bool IsOutput;
 		public string Default;
@@ -112,6 +113,7 @@ namespace GenProc
 		public Parameter(string name, Type type, bool output, string def)
 		{
 			Name = name;
+			NameClean = Name.TrimStart('@').CleanKeyword();
 			Type = type;
 			IsOutput = output;
 			Default = def;
@@ -120,6 +122,7 @@ namespace GenProc
 		public Parameter(string name, string sqlType, bool output, string def)
 		{
 			Name = name;
+			NameClean = Name.TrimStart('@').CleanKeyword();
 			IsOutput = output;
 			Default = def;
 
@@ -137,6 +140,7 @@ namespace GenProc
 	{
 		public string[] Path;
 		public string Name;
+		public string NameClean;
 		public string Original;
 		public List<Parameter> Parameters;
 
@@ -159,12 +163,14 @@ namespace GenProc
 			{
 				Console.Error.WriteLine("Procedure missing namespaces: {0}", full);
 				Name = full;
+				NameClean = Name.TrimStart('@').CleanKeyword();
 				Path = new string[] { Properties.Settings.Default.MasterClass };
 				return;
 			}
 
 			Path = parts.Take(parts.Length - 1).ToArray();
 			Name = parts.Last();
+			NameClean = Name.TrimStart('@').CleanKeyword();
 		}
 	}
 
@@ -198,7 +204,16 @@ namespace GenProc
 			Console.WriteLine("Database: {0}", Settings.DatabaseName);
 
 			SqlConnection conn = new SqlConnection(Settings.DatabaseConnection);
-			conn.Open();
+
+			try
+			{
+				conn.Open();
+			}
+			catch (SqlException ex)
+			{
+				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
+				return;
+			}
 
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
 
@@ -229,6 +244,13 @@ namespace GenProc
 					}
 					else
 						p.Default = null;
+
+					if (p.NameClean == proc.NameClean)
+					{
+						p.NameClean = Char.ToLower(p.NameClean[0]) + p.NameClean.Substring(1);
+						if(p.NameClean == proc.NameClean)
+							p.NameClean = Char.ToUpper(p.NameClean[0]) + p.NameClean.Substring(1);
+					}
 
 					proc.Parameters.Add(p);
 				}
@@ -342,9 +364,7 @@ namespace GenProc
 				{
 					Templates.Function func = new Templates.Function();
 					func.Session = new Dictionary<string, object>();
-					func.Session["name"] = proc.Name;
-					func.Session["parameters"] = proc.Parameters.ToArray();
-					func.Session["procedure"] = proc.Original;
+					func.Session["procedure"] = proc;
 					func.Initialize();
 					funcs.Append(func.TransformText());
 				}

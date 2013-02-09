@@ -14,14 +14,11 @@ using System.Threading.Tasks;
 
 namespace Procedures
 {
-	public class WrappedProcedure
+	public abstract class WrappedProcedure
 	{
-		private SqlCommand _cmd;
+		protected SqlCommand _cmd;
 
-		internal WrappedProcedure(SqlCommand cmd)
-		{
-			_cmd = cmd;
-		}
+		protected abstract void AssignOutputs();
 
 		public Dictionary<string, object>[] Memory()
 		{
@@ -30,6 +27,8 @@ namespace Procedures
 				_cmd.Connection.Open();
 				List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
 				SqlDataReader reader = _cmd.ExecuteReader();
+				AssignOutputs();
+
 				while (reader.Read())
 				{
 					Dictionary<string, object> row = new Dictionary<string, object>();
@@ -53,7 +52,9 @@ namespace Procedures
 			try
 			{
 				_cmd.Connection.Open();
-				return _cmd.ExecuteReader();
+				SqlDataReader reader = _cmd.ExecuteReader();
+				AssignOutputs();
+				return reader;
 			}
 			catch (Exception ex)
 			{
@@ -69,7 +70,9 @@ namespace Procedures
 			try
 			{
 				_cmd.Connection.Open();
-				return _cmd.ExecuteNonQuery();
+				int ret = _cmd.ExecuteNonQuery();
+				AssignOutputs();
+				return ret;
 			}
 			finally
 			{
@@ -83,7 +86,9 @@ namespace Procedures
 			try
 			{
 				_cmd.Connection.Open();
-				return (T)Convert.ChangeType(_cmd.ExecuteScalar(), typeof(T));
+				T ret = (T)Convert.ChangeType(_cmd.ExecuteScalar(), typeof(T));
+				AssignOutputs();
+				return ret;
 			}
 			finally
 			{

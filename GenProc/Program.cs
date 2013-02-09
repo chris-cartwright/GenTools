@@ -14,6 +14,27 @@ using Microsoft.SqlServer.Management.Smo;
 
 namespace GenProc
 {
+	public static class Helpers
+	{
+		public static readonly string[] Keywords = new string[]
+		{
+			 "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default",
+			 "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto",
+			 "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out",
+			 "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc",
+			 "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using",
+			 "virtual", "void", "volatile", "while"
+		};
+
+		public static string CleanKeyword(this string str)
+		{
+			if (Keywords.Contains(str))
+				return "@" + str;
+			else
+				return str;
+		}
+	}
+
 	public class Branch<T>
 	{
 		private static Branch<T> Resolve(Branch<T> branch, string[] parts)
@@ -60,37 +81,46 @@ namespace GenProc
 	{
 		public readonly Dictionary<string, Type> ParameterTypeMap = new Dictionary<string, Type>()
 		{
-			{ "nvarchar",		typeof(string) },
-			{ "varchar",		typeof(string) },
-			{ "int",			typeof(int) },
-			{ "bigint",			typeof(long) },
-			{ "smallint",		typeof(short) },
-			{ "bit",			typeof(bool) },
-			{ "datetime",		typeof(DateTime) },
-			{ "money",			typeof(decimal) },
-			{ "Flag",			typeof(bool) },
-			{ "hierarchyid",	typeof(string) },
-			{ "tinyint",		typeof(byte) },
-			{ "nchar",			typeof(string) }
+			{ "nvarchar",			typeof(string) },
+			{ "varchar",			typeof(string) },
+			{ "int",				typeof(int) },
+			{ "bigint",				typeof(long) },
+			{ "smallint",			typeof(short) },
+			{ "bit",				typeof(bool) },
+			{ "datetime",			typeof(DateTime) },
+			{ "money",				typeof(decimal) },
+			{ "Flag",				typeof(bool) },
+			{ "hierarchyid",		typeof(string) },
+			{ "tinyint",			typeof(byte) },
+			{ "nchar",				typeof(char) },
+			{ "char",				typeof(char) },
+			{ "image",				typeof(byte[]) },
+			{ "uniqueidentifier",	typeof(Guid) },
+			{ "text",				typeof(string) },
+			{ "decimal",			typeof(decimal) },
+			{ "float",				typeof(float) },
+			{ "varbinary",			typeof(byte[]) },
+			{ "date",				typeof(DateTime) }
 		};
 
 		public string Name;
 		public Type Type;
-		public bool Output;
+		public bool IsOutput;
 		public string Default;
-
+		public bool IsNull;
+		
 		public Parameter(string name, Type type, bool output, string def)
 		{
 			Name = name;
 			Type = type;
-			Output = output;
+			IsOutput = output;
 			Default = def;
 		}
 
 		public Parameter(string name, string sqlType, bool output, string def)
 		{
 			Name = name;
-			Output = output;
+			IsOutput = output;
 			Default = def;
 
 			if (ParameterTypeMap.ContainsKey(sqlType))
@@ -124,7 +154,7 @@ namespace GenProc
 			if (full.Substring(0, 2) == "p_")
 				full = full.Substring(2);
 
-			string[] parts = full.Split('_');
+			string[] parts = full.Split('_').Where(p => p.Length > 0).ToArray();
 			if (parts.Length == 1)
 			{
 				Console.Error.WriteLine("Procedure missing namespaces: {0}", full);
@@ -188,8 +218,17 @@ namespace GenProc
 				foreach (StoredProcedureParameter param in sp.Parameters)
 				{
 					Parameter p = new Parameter(param.Name, param.DataType.Name, param.IsOutputParameter, param.DefaultValue);
-					if (p.Type == typeof(string))
-						p.Default = '"' + p.Default.Trim('\'') + '"';
+					if (!p.IsOutput)
+					{
+						if (param.DefaultValue.ToLower() == "null")
+							p.IsNull = true;
+						else if (p.Type == typeof(string))
+							p.Default = '"' + p.Default.Trim('\'') + '"';
+						else if (p.Type == typeof(bool))
+							p.Default = p.Default == "0" ? "false" : "true";
+					}
+					else
+						p.Default = null;
 
 					proc.Parameters.Add(p);
 				}
@@ -283,7 +322,12 @@ namespace GenProc
 		{
 			StringWriter classes = new StringWriter();
 			foreach (Branch<Procedure> brch in branch.Branches)
+			{
+				if (branch.Leaves.Count(p => p.Name == brch.Name) > 0)
+					brch.Name = Properties.Settings.Default.CollisionPrefix + brch.Name;
+
 				WriteCodeMonolithic(classes, brch);
+			}
 
 			if (first)
 			{

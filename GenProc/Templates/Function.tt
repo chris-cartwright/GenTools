@@ -13,12 +13,18 @@
 
 Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenProc.Parameter p, StringBuilder sbp)
 {
-	if(p.Output)
+	if(p.IsOutput)
 		sbp.Append("ref ");
 
-	sbp.Append(p.Type.Name).Append(" ").Append(p.Name.TrimStart('@'));
+	sbp.Append(p.Type.Name);
+	if(p.IsNull && p.Type.IsValueType)
+		sbp.Append("?");
+	
+	sbp.Append(" ").Append(p.Name.TrimStart('@').CleanKeyword());
 
-	if(!String.IsNullOrEmpty(p.Default))
+	if(p.IsNull)
+		sbp.Append(" = null");
+	else if(!String.IsNullOrEmpty(p.Default))
 	{
 		sbp.Append(" = ");
 		sbp.Append(p.Default);
@@ -32,15 +38,14 @@ foreach(GenProc.Parameter p in parameters.OrderBy(p => !String.IsNullOrEmpty(p.D
 	GenParam(p, sb).Append(", ");
 
 #>
-		public static WrappedProcedure <#=name #>(<#=sb.ToString().TrimEnd(',', ' ') #>)
+		public static WrappedProcedure <#=name.CleanKeyword() #>(<#=sb.ToString().TrimEnd(',', ' ') #>)
 		{
 			SqlConnection conn = new SqlConnection("");
 			SqlCommand cmd = new SqlCommand("<#=procedure #>", conn);
 			cmd.CommandType = CommandType.StoredProcedure;
 
-			<# foreach(GenProc.Parameter p in parameters) { #>cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.Name.TrimStart('@') #>)<# if(p.Output) { #>.Output = true<# } #>;
+			<# foreach(GenProc.Parameter p in parameters) { #>cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.Name.TrimStart('@').CleanKeyword() #>)<# if(p.IsOutput) { #>.Direction = ParameterDirection.Output<# } #>;
 			<# } #>
 
 			return new WrappedProcedure(cmd);
 		}
-

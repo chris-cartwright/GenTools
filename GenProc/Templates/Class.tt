@@ -6,7 +6,7 @@
 <#@ parameter name="className" type="System.String"  #>
 <#@ parameter name="functions" type="System.String"  #>
 <#@ parameter name="classes" type="System.String" #>
-	public static class <#=className #>
+	public static class <#=className.CleanKeyword() #>
 	{
 		<# if(classes != null && classes.Length > 0) { #><#=classes #>
 		<# } #><#=functions.Trim() #>

@@ -96,7 +96,10 @@ namespace GenProc
 			if (ParameterTypeMap.ContainsKey(sqlType))
 				Type = ParameterTypeMap[sqlType];
 			else
+			{
+				Type = typeof(object);
 				Console.Error.WriteLine("Could not find type: {0}", sqlType);
+			}
 		}
 	}
 

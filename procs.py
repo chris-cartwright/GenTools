@@ -5,7 +5,7 @@ words = [ "First", "Second", "Third", "Fourth", "Fith", "Sixth" ]
 types = [ "int", "nvarchar(max)", "nvarchar(5)", "bit", "bigint", "smallint" ]
 
 procs = set()
-while(len(procs) < 200):
+while(len(procs) < 1300):
     name = "_".join([ words[random.randrange(0, len(words))] for level in range(1, random.randrange(2, 8)) ])
     if random.randrange(0, 2) == 1:
         procs.add(name)

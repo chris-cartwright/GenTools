@@ -15,8 +15,8 @@ Generated on <#=DateTime.Now.ToString("dd MMM HH:mm:ss") #>
 */
 
 using System;
+using System.Data;
 using System.Data.SqlClient;
-using System.Sql;
 
 namespace <#=namespace #>
 {

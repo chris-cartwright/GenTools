@@ -17,17 +17,26 @@ namespace GitVersion
 				string pwd = args[0].Trim('"');
 				Directory.SetCurrentDirectory(pwd);
 
-				ProcessStartInfo git = new ProcessStartInfo("git", "rev-parse --short HEAD");
-				git.RedirectStandardOutput = true;
-				git.UseShellExecute = false;
-				git.CreateNoWindow = true;
+				string rev = "unknown";
+				try
+				{
+					ProcessStartInfo git = new ProcessStartInfo("git", "rev-parse --short HEAD");
+					git.RedirectStandardOutput = true;
+					git.UseShellExecute = false;
+					git.CreateNoWindow = true;
 
-				Process proc = new Process();
-				proc.StartInfo = git;
-				proc.Start();
-				proc.WaitForExit();
+					Process proc = new Process();
+					proc.StartInfo = git;
+					proc.Start();
+					proc.WaitForExit();
 
-				string rev = proc.StandardOutput.ReadToEnd().Trim();
+					rev = proc.StandardOutput.ReadToEnd().Trim();
+				}
+				catch (Exception)
+				{
+					Console.WriteLine("Could not launch git.");
+				}
+
 				StreamWriter sw = new StreamWriter("git.cs", false);
 				sw.WriteLine(String.Format("[assembly: GitRevision(\"{0}\")]", rev));
 				sw.Close();

@@ -6,13 +6,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Procedures
 {
-	public static class WrappedProcedure
+	public class WrappedProcedure
 	{
 		private SqlCommand _cmd;
 
@@ -28,10 +30,10 @@ namespace Procedures
 				_cmd.Connection.Open();
 				List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
 				SqlDataReader reader = _cmd.ExecuteReader();
-				while (reader.Next())
+				while (reader.Read())
 				{
 					Dictionary<string, object> row = new Dictionary<string, object>();
-					for (int i = 0; i < reader.FieldCount(); i++)
+					for (int i = 0; i < reader.FieldCount; i++)
 						row[reader.GetName(i)] = reader[i];
 
 					ret.Add(row);
@@ -42,7 +44,7 @@ namespace Procedures
 			finally
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
-					_cmd.Close();
+					_cmd.Connection.Close();
 			}
 		}
 
@@ -56,12 +58,10 @@ namespace Procedures
 			catch (Exception ex)
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
-					_cmd.Close();
+					_cmd.Connection.Close();
 
 				throw ex;
 			}
-
-			return null;
 		}
 
 		public int NonQuery()
@@ -74,10 +74,8 @@ namespace Procedures
 			finally
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
-					_cmd.Close();
+					_cmd.Connection.Close();
 			}
-
-			return -1;
 		}
 
 		public T Scalar<T>() where T : IConvertible
@@ -85,12 +83,12 @@ namespace Procedures
 			try
 			{
 				_cmd.Connection.Open();
-				return Convert.ChangeType(_cmd.ExecuteScalar(), typeof(T));
+				return (T)Convert.ChangeType(_cmd.ExecuteScalar(), typeof(T));
 			}
 			finally
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
-					_cmd.Close();
+					_cmd.Connection.Close();
 			}
 		}
 	}

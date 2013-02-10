@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenProc", "GenProc\GenProc.csproj", "{D07156DF-621A-4303-8B76-3E1F79002C2E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B40C06B3-399F-45D2-B441-17225F716363} = {B40C06B3-399F-45D2-B441-17225F716363}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitVersion", "GitVersion\GitVersion.csproj", "{B40C06B3-399F-45D2-B441-17225F716363}"
 EndProject

@@ -104,5 +104,17 @@ namespace GenProc.Properties {
                 this["Monolithic"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Test.cs")]
+        public string MonolithicOutput {
+            get {
+                return ((string)(this["MonolithicOutput"]));
+            }
+            set {
+                this["MonolithicOutput"] = value;
+            }
+        }
     }
 }

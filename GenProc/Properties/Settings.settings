@@ -27,5 +27,8 @@
     <Setting Name="Monolithic" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="MonolithicOutput" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Test.cs</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

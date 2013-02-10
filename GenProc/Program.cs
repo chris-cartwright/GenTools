@@ -26,12 +26,50 @@ namespace GenProc
 			 "virtual", "void", "volatile", "while"
 		};
 
+		public static readonly Dictionary<string, Type> TypeMap = new Dictionary<string, Type>()
+		{
+			{ "nvarchar",			typeof(string) },
+			{ "varchar",			typeof(string) },
+			{ "int",				typeof(int) },
+			{ "bigint",				typeof(long) },
+			{ "smallint",			typeof(short) },
+			{ "bit",				typeof(bool) },
+			{ "datetime",			typeof(DateTime) },
+			{ "money",				typeof(decimal) },
+			{ "Flag",				typeof(bool) },
+			{ "hierarchyid",		typeof(string) },
+			{ "tinyint",			typeof(byte) },
+			{ "nchar",				typeof(char) },
+			{ "char",				typeof(char) },
+			{ "image",				typeof(byte[]) },
+			{ "uniqueidentifier",	typeof(Guid) },
+			{ "text",				typeof(string) },
+			{ "decimal",			typeof(decimal) },
+			{ "float",				typeof(float) },
+			{ "varbinary",			typeof(byte[]) },
+			{ "date",				typeof(DateTime) }
+		};
+
+		public static readonly Version Version;
+		public static readonly string Revision;
+
+		static Helpers()
+		{
+			Version = Assembly.GetExecutingAssembly().GetName().Version;
+			Revision = ((GitRevisionAttribute)Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(GitRevisionAttribute))).Revision;
+		}
+
 		public static string CleanKeyword(this string str)
 		{
 			if (Keywords.Contains(str))
 				return "@" + str;
 			else
 				return str;
+		}
+
+		public static string CleanName(this string str)
+		{
+			return str.TrimStart('@').CleanKeyword();
 		}
 	}
 
@@ -79,31 +117,13 @@ namespace GenProc
 
 	public class Parameter
 	{
-		public readonly Dictionary<string, Type> ParameterTypeMap = new Dictionary<string, Type>()
+		private string _name;
+		public string Name
 		{
-			{ "nvarchar",			typeof(string) },
-			{ "varchar",			typeof(string) },
-			{ "int",				typeof(int) },
-			{ "bigint",				typeof(long) },
-			{ "smallint",			typeof(short) },
-			{ "bit",				typeof(bool) },
-			{ "datetime",			typeof(DateTime) },
-			{ "money",				typeof(decimal) },
-			{ "Flag",				typeof(bool) },
-			{ "hierarchyid",		typeof(string) },
-			{ "tinyint",			typeof(byte) },
-			{ "nchar",				typeof(char) },
-			{ "char",				typeof(char) },
-			{ "image",				typeof(byte[]) },
-			{ "uniqueidentifier",	typeof(Guid) },
-			{ "text",				typeof(string) },
-			{ "decimal",			typeof(decimal) },
-			{ "float",				typeof(float) },
-			{ "varbinary",			typeof(byte[]) },
-			{ "date",				typeof(DateTime) }
-		};
+			get { return _name; }
+			set { _name = value; NameClean = value.CleanName(); }
+		}
 
-		public string Name;
 		public string NameClean;
 		public Type Type;
 		public bool IsOutput;
@@ -113,7 +133,6 @@ namespace GenProc
 		public Parameter(string name, Type type, bool output, string def)
 		{
 			Name = name;
-			NameClean = Name.TrimStart('@').CleanKeyword();
 			Type = type;
 			IsOutput = output;
 			Default = def;
@@ -122,12 +141,11 @@ namespace GenProc
 		public Parameter(string name, string sqlType, bool output, string def)
 		{
 			Name = name;
-			NameClean = Name.TrimStart('@').CleanKeyword();
 			IsOutput = output;
 			Default = def;
 
-			if (ParameterTypeMap.ContainsKey(sqlType))
-				Type = ParameterTypeMap[sqlType];
+			if (Helpers.TypeMap.ContainsKey(sqlType))
+				Type = Helpers.TypeMap[sqlType];
 			else
 			{
 				Type = typeof(object);
@@ -138,8 +156,14 @@ namespace GenProc
 
 	public class Procedure
 	{
+		private string _name;
+		public string Name
+		{
+			get { return _name; }
+			set { _name = value; NameClean = value.CleanName(); }
+		}
+
 		public string[] Path;
-		public string Name;
 		public string NameClean;
 		public string Original;
 		public List<Parameter> Parameters;
@@ -155,22 +179,21 @@ namespace GenProc
 		{
 			Original = full;
 
-			if (full.Substring(0, 2) == "p_")
+			string prefix = full.Substring(0, 2);
+			if (prefix == "p_" || prefix == "s_")
 				full = full.Substring(2);
 
-			string[] parts = full.Split('_').Where(p => p.Length > 0).ToArray();
-			if (parts.Length == 1)
+			IEnumerable<string> parts = full.Split('_').Where(p => p.Length > 0);
+			if (parts.Count() == 1)
 			{
 				Console.Error.WriteLine("Procedure missing namespaces: {0}", full);
 				Name = full;
-				NameClean = Name.TrimStart('@').CleanKeyword();
 				Path = new string[] { Properties.Settings.Default.MasterClass };
 				return;
 			}
 
-			Path = parts.Take(parts.Length - 1).ToArray();
+			Path = parts.Take(parts.Count() - 1).ToArray();
 			Name = parts.Last();
-			NameClean = Name.TrimStart('@').CleanKeyword();
 		}
 	}
 
@@ -193,13 +216,7 @@ namespace GenProc
 		{
 			Settings = Properties.Settings.Default;
 
-			TimeSpan inserts = new TimeSpan();
-
-			Console.WriteLine(
-				"\nGenProc version {0}-{1}\n",
-				Assembly.GetExecutingAssembly().GetName().Version,
-				((GitRevisionAttribute)Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(GitRevisionAttribute))).Revision
-			);
+			Console.WriteLine("\nGenProc version {0}-{1}\n", Helpers.Version, Helpers.Revision);
 			Console.WriteLine("Using connection: {0}", Settings.DatabaseConnection);
 			Console.WriteLine("Database: {0}", Settings.DatabaseName);
 
@@ -216,17 +233,13 @@ namespace GenProc
 			}
 
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
+			TimeSpan inserts = new TimeSpan();
 
 			Server server = new Server(new ServerConnection(conn));
-			Database db = server.Databases[Properties.Settings.Default.DatabaseName];
-			foreach (DataRow row in db.EnumObjects(DatabaseObjectTypes.StoredProcedure).Rows)
+			Database db = server.Databases[Settings.DatabaseName];
+			foreach (StoredProcedure sp in db.StoredProcedures)
 			{
-				string schema = row["Schema"].ToString();
-				if (schema == "sys" || schema == "INFORMATION_SCHEMA")
-					continue;
-
-				StoredProcedure sp = (StoredProcedure)server.GetSmoObject(new Urn(row["Urn"].ToString()));
-				if (sp.IsSystemObject)
+				if (sp.Schema == "sys" || sp.Schema == "INFORMATION_SCHEMA" || sp.IsSystemObject)
 					continue;
 
 				Procedure proc = new Procedure(sp.Name);
@@ -281,7 +294,7 @@ namespace GenProc
 				f.Session["namespace"] = Settings.MasterNamespace;
 				f.Session["class"] = str.ToString();
 				f.Initialize();
-				StreamWriter writer = new StreamWriter(File.Open("Test.cs", FileMode.Create));
+				StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
 				writer.Write(f.TransformText());
 				writer.Close();
 			}
@@ -292,8 +305,6 @@ namespace GenProc
 		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
 		{
 			node = node.TrimStart('.');
-
-			//Console.WriteLine("{0}Path: {1}", new String('\t', depth), path);
 			Directory.CreateDirectory(path);
 
 			foreach (Branch<Procedure> brch in branch.Branches)
@@ -307,14 +318,11 @@ namespace GenProc
 				className = Properties.Settings.Default.CollisionPrefix + className;
 
 			string file = Path.Combine(path, className) + ".cs";
-			//Console.WriteLine("{0}File: {1}", new String('\t', depth), file);
 			StreamWriter tw = new StreamWriter(File.Create(file));
 
 			StringBuilder funcs = new StringBuilder();
 			foreach (Procedure proc in branch.Leaves.OrderBy(p => p.Name))
 			{
-				//Console.WriteLine("{0}Procedure: {1}", new String('\t', depth), proc.Name);
-
 				Templates.Function func = new Templates.Function();
 				func.Session = new Dictionary<string, object>();
 				func.Session["name"] = proc.Name;

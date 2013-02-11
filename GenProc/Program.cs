@@ -8,9 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.SqlServer.Management.Common;
-using Microsoft.SqlServer.Management.Sdk.Sfc;
-using Microsoft.SqlServer.Management.Smo;
 
 namespace GenProc
 {
@@ -156,6 +153,14 @@ namespace GenProc
 
 	public class Procedure
 	{
+		public static readonly Procedure None;
+		
+		static Procedure()
+		{
+			// Name must be at least two characters
+			None = new Procedure("THIS IS NOT A PROCEDURE");
+		}
+
 		private string _name;
 		public string Name
 		{
@@ -235,20 +240,37 @@ namespace GenProc
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
 			TimeSpan inserts = new TimeSpan();
 
-			Server server = new Server(new ServerConnection(conn));
-			Database db = server.Databases[Settings.DatabaseName];
-			foreach (StoredProcedure sp in db.StoredProcedures)
-			{
-				if (sp.Schema == "sys" || sp.Schema == "INFORMATION_SCHEMA" || sp.IsSystemObject)
-					continue;
+			SqlCommand cmd = new SqlCommand("p_ListProcedures", conn);
+			cmd.CommandType = CommandType.StoredProcedure;
 
-				Procedure proc = new Procedure(sp.Name);
-				foreach (StoredProcedureParameter param in sp.Parameters)
+			try
+			{
+				SqlDataReader reader = cmd.ExecuteReader();
+				Procedure proc = Procedure.None;
+				while(reader.Read())
 				{
-					Parameter p = new Parameter(param.Name, param.DataType.Name, param.IsOutputParameter, param.DefaultValue);
+					string procName = reader["Procedure"].ToString();
+					if (procName != proc.Original)
+					{
+						if (proc != Procedure.None)
+						{
+							TimeSpan ts = sw.Elapsed;
+							trunk.Insert(proc.Path, proc);
+							inserts += sw.Elapsed - ts;
+						}
+
+						proc = new Procedure(procName);
+					}
+
+					Parameter p = new Parameter(
+						reader["Parameter"].ToString(),
+						reader["Type"].ToString(),
+						Convert.ToBoolean(reader["Output"]),
+						reader["Value"].ToString().Trim()
+					);
 					if (!p.IsOutput)
 					{
-						if (param.DefaultValue.ToLower() == "null")
+						if (p.Default.ToLower() == "null")
 							p.IsNull = true;
 						else if (p.Type == typeof(string))
 							p.Default = '"' + p.Default.Trim('\'') + '"';
@@ -261,19 +283,22 @@ namespace GenProc
 					if (p.NameClean == proc.NameClean)
 					{
 						p.NameClean = Char.ToLower(p.NameClean[0]) + p.NameClean.Substring(1);
-						if(p.NameClean == proc.NameClean)
+						if (p.NameClean == proc.NameClean)
 							p.NameClean = Char.ToUpper(p.NameClean[0]) + p.NameClean.Substring(1);
 					}
 
 					proc.Parameters.Add(p);
 				}
-
-				TimeSpan ts = sw.Elapsed;
-				trunk.Insert(proc.Path, proc);
-				inserts += sw.Elapsed - ts;
 			}
-
-			conn.Close();
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine("Error parsing data: {0}", ex.Message);
+			}
+			finally
+			{
+				if(conn.State == ConnectionState.Open)
+					conn.Close();
+			}
 
 			Console.WriteLine("Done database stuff: {0}", sw.Elapsed);
 			Console.WriteLine("Time spent inserting: {0}", inserts);

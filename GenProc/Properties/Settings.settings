@@ -5,9 +5,6 @@
     <Setting Name="OutputDirectory" Type="System.String" Scope="User">
       <Value Profile="(Default)">Output</Value>
     </Setting>
-    <Setting Name="DatabaseName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Test</Value>
-    </Setting>
     <Setting Name="MasterNamespace" Type="System.String" Scope="User">
       <Value Profile="(Default)">Procedures</Value>
     </Setting>
@@ -17,9 +14,9 @@
     <Setting Name="DatabaseConnection" Type="(Connection string)" Scope="Application">
       <DesignTimeValue Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
 &lt;SerializableConnectionString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"&gt;
-  &lt;ConnectionString&gt;Data Source=.\SQLEXPRESS;Integrated Security=True&lt;/ConnectionString&gt;
+  &lt;ConnectionString&gt;Data Source=.\SQLEXPRESS;Integrated Security=True;Database=Test&lt;/ConnectionString&gt;
 &lt;/SerializableConnectionString&gt;</DesignTimeValue>
-      <Value Profile="(Default)">Data Source=.\SQLEXPRESS;Integrated Security=True</Value>
+      <Value Profile="(Default)">Data Source=.\SQLEXPRESS;Integrated Security=True;Database=Test</Value>
     </Setting>
     <Setting Name="CollisionPrefix" Type="System.String" Scope="User">
       <Value Profile="(Default)">C</Value>

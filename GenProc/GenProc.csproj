@@ -48,9 +48,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files\Microsoft SQL Server\110\SDK\Assemblies\Microsoft.SqlServer.SqlEnum.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.4.5.11\lib\net40\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -85,7 +82,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Function.tt</DependentUpon>
     </Compile>
-    <None Include="packages.config" />
     <None Include="Templates\Class.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>Class.cs</LastGenOutput>

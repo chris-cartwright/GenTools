@@ -9,7 +9,7 @@
 
 /*
 
-Generated using GenProc Version <#=Assembly.GetExecutingAssembly().GetName().Version #>
+Generated using GenProc Version <#=GenProc.Helpers.Version #>-<#=GenProc.Helpers.Revision #>
 Generated on <#=DateTime.Now.ToString("dd MMM HH:mm:ss") #>
 
 */

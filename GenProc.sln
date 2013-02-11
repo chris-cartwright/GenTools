@@ -10,6 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitVersion", "GitVersion\Gi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5E8453A6-2726-4526-AD62-54279D7761D2}"
 	ProjectSection(SolutionItems) = preProject
+		DatabaseSetup.sql = DatabaseSetup.sql
 		procs.py = procs.py
 	EndProjectSection
 EndProject

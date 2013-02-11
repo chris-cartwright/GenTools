@@ -223,7 +223,6 @@ namespace GenProc
 
 			Console.WriteLine("\nGenProc version {0}-{1}\n", Helpers.Version, Helpers.Revision);
 			Console.WriteLine("Using connection: {0}", Settings.DatabaseConnection);
-			Console.WriteLine("Database: {0}", Settings.DatabaseName);
 
 			SqlConnection conn = new SqlConnection(Settings.DatabaseConnection);
 

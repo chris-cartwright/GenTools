@@ -292,6 +292,7 @@ namespace GenProc
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine("Error parsing data: {0}", ex.Message);
+				return;
 			}
 			finally
 			{

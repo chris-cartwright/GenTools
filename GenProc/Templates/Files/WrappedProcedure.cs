@@ -16,6 +16,8 @@ namespace Procedures
 {
 	public abstract class WrappedProcedure
 	{
+		protected static readonly string ConnectionString;
+
 		protected SqlCommand _cmd;
 
 		protected abstract void AssignOutputs();

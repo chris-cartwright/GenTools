@@ -53,7 +53,7 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Orde
 				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput)) { #>this.<#=p.NameClean #> = <#=p.NameClean #>;
 				<# } #>
 
-				SqlConnection conn = new SqlConnection("");
+				SqlConnection conn = new SqlConnection(ConnectionString);
 				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
 				_cmd.CommandType = CommandType.StoredProcedure;
 

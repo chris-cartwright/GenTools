@@ -208,6 +208,11 @@ namespace GenProc
 
 		static void Main(string[] args)
 		{
+			if (args.Length == 1)
+			{
+				Properties.Settings.Default.MonolithicOutput = args[0];
+			}
+
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 

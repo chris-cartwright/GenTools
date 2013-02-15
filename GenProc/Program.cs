@@ -44,7 +44,8 @@ namespace GenProc
 			{ "decimal",			typeof(decimal) },
 			{ "float",				typeof(float) },
 			{ "varbinary",			typeof(byte[]) },
-			{ "date",				typeof(DateTime) }
+			{ "date",				typeof(DateTime) },
+			{ "sysname",			typeof(string) }
 		};
 
 		public static readonly Version Version;
@@ -206,7 +207,7 @@ namespace GenProc
 	{
 		private static Properties.Settings Settings;
 
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
 			if (args.Length == 1)
 			{
@@ -216,13 +217,23 @@ namespace GenProc
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 
-			(new Program()).Run(sw);
+			int ret = (new Program()).Run(sw);
 
 			sw.Stop();
 			Console.WriteLine("Total time: {0}", sw.Elapsed);
+
+			return ret;
 		}
 
-		public void Run(Stopwatch sw)
+		private static class Return
+		{
+			public const int Success = 0;
+			public const int ConnectFailed = 1;
+			public const int ParseError = 2;
+			public const int FileAccess = 3;
+		}
+
+		public int Run(Stopwatch sw)
 		{
 			Settings = Properties.Settings.Default;
 
@@ -238,7 +249,7 @@ namespace GenProc
 			catch (SqlException ex)
 			{
 				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
-				return;
+				return Return.ConnectFailed;
 			}
 
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
@@ -297,7 +308,7 @@ namespace GenProc
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine("Error parsing data: {0}", ex.Message);
-				return;
+				return Return.ParseError;
 			}
 			finally
 			{
@@ -324,12 +335,27 @@ namespace GenProc
 				f.Session["namespace"] = Settings.MasterNamespace;
 				f.Session["class"] = str.ToString();
 				f.Initialize();
-				StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
-				writer.Write(f.TransformText());
-				writer.Close();
+
+				try
+				{
+					FileAttributes attr = File.GetAttributes(Settings.MonolithicOutput);
+					if ((attr & FileAttributes.ReadOnly) > 0)
+						File.SetAttributes(Settings.MonolithicOutput, attr ^ FileAttributes.ReadOnly);
+
+					StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
+					writer.Write(f.TransformText());
+					writer.Close();
+				}
+				catch (UnauthorizedAccessException ex)
+				{
+					Console.Error.WriteLine("Could not access output file: ({0}) {1}", ex.GetType().Name, ex.Message);
+					return Return.FileAccess;
+				}
 			}
 			else
 				WriteCodeMulti(trunk, path, "");
+
+			return Return.Success;
 		}
 
 		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)

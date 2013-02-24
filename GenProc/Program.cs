@@ -410,7 +410,12 @@ namespace GenProc
 				}
 				catch (UnauthorizedAccessException ex)
 				{
-					Logger.Error("Could not access output file: ({0}) {1}", ex.GetType().Name, ex.Message);
+					Logger.Error("Could not access output file: {0}", ex.Message);
+					return Return.FileAccess;
+				}
+				catch (Exception ex)
+				{
+					Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
 					return Return.FileAccess;
 				}
 			}

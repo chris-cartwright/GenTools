@@ -237,7 +237,6 @@ namespace GenProc
 			public const int ConnectFailed = 1;
 			public const int ParseError = 2;
 			public const int FileAccess = 3;
-			public const int Unknown = 4;
 		}
 
 		public int Run(Stopwatch sw)
@@ -359,12 +358,7 @@ namespace GenProc
 				}
 				catch (UnauthorizedAccessException ex)
 				{
-					Console.Error.WriteLine("Could not access output file: {0}", ex.Message);
-					return Return.FileAccess;
-				}
-				catch (Exception ex)
-				{
-					Console.Error.WriteLine("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
+					Console.Error.WriteLine("Could not access output file: ({0}) {1}", ex.GetType().Name, ex.Message);
 					return Return.FileAccess;
 				}
 			}

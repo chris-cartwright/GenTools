@@ -42,6 +42,12 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Orde
 			<# foreach(GenProc.Parameter p in procedure.Parameters) { #>public <#=p.Type.Name #><# if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray) { #>?<# } #> <#=p.NameClean #>;
 			<# } #>
 
+			protected override void AssignInputs()
+			{
+				<# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters["<#=p.Name #>"].Value = <#=p.NameClean #>;
+				<# } #>
+			}
+
 			protected override void AssignOutputs()
 			{
 				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => p.IsOutput)) { #><#=p.NameClean #> = (<#=p.Type.Name #>)_cmd.Parameters["<#=p.Name #>"].Value;
@@ -53,7 +59,7 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Orde
 				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput)) { #>this.<#=p.NameClean #> = <#=p.NameClean #>;
 				<# } #>
 
-				SqlConnection conn = new SqlConnection("");
+				SqlConnection conn = new SqlConnection(ConnectionString);
 				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
 				_cmd.CommandType = CommandType.StoredProcedure;
 

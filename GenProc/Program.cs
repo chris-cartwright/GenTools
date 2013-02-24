@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace GenProc
 {
@@ -23,6 +22,7 @@ namespace GenProc
 			 "virtual", "void", "volatile", "while"
 		};
 
+		// http://msdn.microsoft.com/en-us/library/cc716729.aspx
 		public static readonly Dictionary<string, Type> TypeMap = new Dictionary<string, Type>()
 		{
 			{ "nvarchar",			typeof(string) },
@@ -44,7 +44,9 @@ namespace GenProc
 			{ "decimal",			typeof(decimal) },
 			{ "float",				typeof(float) },
 			{ "varbinary",			typeof(byte[]) },
-			{ "date",				typeof(DateTime) }
+			{ "date",				typeof(DateTime) },
+			{ "sysname",			typeof(string) },
+            { "timestamp",          typeof(byte[]) }
 		};
 
 		public static readonly Version Version;
@@ -53,7 +55,12 @@ namespace GenProc
 		static Helpers()
 		{
 			Version = Assembly.GetExecutingAssembly().GetName().Version;
-			Revision = ((GitRevisionAttribute)Assembly.GetExecutingAssembly().GetCustomAttribute(typeof(GitRevisionAttribute))).Revision;
+
+			object[] rev = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GitRevisionAttribute), true);
+			if (rev.Length > 0)
+				Revision = ((GitRevisionAttribute)rev[0]).Revision;
+			else
+				Revision = "unknown-e";
 		}
 
 		public static string CleanKeyword(this string str)
@@ -154,7 +161,7 @@ namespace GenProc
 	public class Procedure
 	{
 		public static readonly Procedure None;
-		
+
 		static Procedure()
 		{
 			// Name must be at least two characters
@@ -206,18 +213,34 @@ namespace GenProc
 	{
 		private static Properties.Settings Settings;
 
-		static void Main(string[] args)
+		static int Main(string[] args)
 		{
+			if (args.Length == 1)
+			{
+				Properties.Settings.Default.MonolithicOutput = args[0];
+			}
+
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 
-			(new Program()).Run(sw);
+			int ret = (new Program()).Run(sw);
 
 			sw.Stop();
 			Console.WriteLine("Total time: {0}", sw.Elapsed);
+
+			return ret;
 		}
 
-		public void Run(Stopwatch sw)
+		private static class Return
+		{
+			public const int Success = 0;
+			public const int ConnectFailed = 1;
+			public const int ParseError = 2;
+			public const int FileAccess = 3;
+			public const int Unknown = 4;
+		}
+
+		public int Run(Stopwatch sw)
 		{
 			Settings = Properties.Settings.Default;
 
@@ -233,7 +256,7 @@ namespace GenProc
 			catch (SqlException ex)
 			{
 				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
-				return;
+				return Return.ConnectFailed;
 			}
 
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
@@ -288,10 +311,15 @@ namespace GenProc
 
 					proc.Parameters.Add(p);
 				}
+
+				// Add last procedure
+				if(proc != Procedure.None)
+					trunk.Insert(proc.Path, proc);
 			}
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine("Error parsing data: {0}", ex.Message);
+				return Return.ParseError;
 			}
 			finally
 			{
@@ -318,12 +346,32 @@ namespace GenProc
 				f.Session["namespace"] = Settings.MasterNamespace;
 				f.Session["class"] = str.ToString();
 				f.Initialize();
-				StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
-				writer.Write(f.TransformText());
-				writer.Close();
+
+				try
+				{
+					FileAttributes attr = File.GetAttributes(Settings.MonolithicOutput);
+					if ((attr & FileAttributes.ReadOnly) > 0)
+						File.SetAttributes(Settings.MonolithicOutput, attr ^ FileAttributes.ReadOnly);
+
+					StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
+					writer.Write(f.TransformText());
+					writer.Close();
+				}
+				catch (UnauthorizedAccessException ex)
+				{
+					Console.Error.WriteLine("Could not access output file: {0}", ex.Message);
+					return Return.FileAccess;
+				}
+				catch (Exception ex)
+				{
+					Console.Error.WriteLine("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
+					return Return.FileAccess;
+				}
 			}
 			else
 				WriteCodeMulti(trunk, path, "");
+
+			return Return.Success;
 		}
 
 		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)

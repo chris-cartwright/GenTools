@@ -59,16 +59,6 @@ namespace GenProc.Properties {
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
-        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\SQLEXPRESS;Integrated Security=True;Database=Test")]
-        public string DatabaseConnection {
-            get {
-                return ((string)(this["DatabaseConnection"]));
-            }
-        }
-        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("C")]
@@ -102,6 +92,17 @@ namespace GenProc.Properties {
             }
             set {
                 this["MonolithicOutput"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=devserver2; Initial Catalog=_v4_Development; User ID=OSCID; Password=" +
+            "OSCIDDevelopment;MultipleActiveResultSets=True;")]
+        public string DatabaseConnection {
+            get {
+                return ((string)(this["DatabaseConnection"]));
             }
         }
     }

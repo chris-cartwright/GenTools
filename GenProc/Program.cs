@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Mono.Options;
+using System.Configuration;
 
 namespace GenProc
 {
@@ -218,17 +219,18 @@ namespace GenProc
 		{
 			Settings = Properties.Settings.Default;
 
-			Console.WriteLine("\nGenProc version {0}-{1}\n", Helpers.Version, Helpers.Revision);
+			Console.WriteLine("GenProc version {0}-{1}", Helpers.Version, Helpers.Revision);
 
 			bool help = false;
 			OptionSet opts = new OptionSet()
 			{
 				{ "v", "Increase verbosity level.", v => Settings.LoggingLevel++ },
-				{ "verbosity", "Verbosity level. 0-4 are supported.", (ushort v) => Settings.LoggingLevel = v },
-				{ "p|prefix", "Prefix to use on naming collisions.", (string v) => Settings.CollisionPrefix = v },
+				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => Settings.LoggingLevel = v },
+				{ "p|prefix:", "Prefix to use on naming collisions.", (string v) => Settings.CollisionPrefix = v },
 				{ "m|monolithic", "Enable monolithic mode.", v => Settings.Monolithic = v != null },
-				{ "n|namespace", "Namespace generated code should exist in.", (string v) => Settings.MasterNamespace = v },
-				{ "o|misc", "Name of the class to use for procedures lacking underscores.", (string v) => Settings.MiscClass = v },
+				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => Settings.MasterNamespace = v },
+				{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => Settings.MiscClass = v },
+				{ "c|connection:", "Name of connection string to use.", (string v) => Settings.ConnectionString = v },
 				{ "h|help", "Show this message.", v => help = v != null }
 			};
 
@@ -259,6 +261,13 @@ namespace GenProc
 				Settings.MonolithicOutput = extra.First();
 			}
 
+			Settings.ConnectionString = "GenProc.Properties.Settings." + Settings.ConnectionString;
+			if (ConfigurationManager.ConnectionStrings[Settings.ConnectionString] == null)
+			{
+				Logger.Error("Unknown connection: {0}", Settings.ConnectionString);
+				return Return.UnknownConnection;
+			}
+
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
 
@@ -287,15 +296,15 @@ namespace GenProc
 			public const int ParseError = 2;
 			public const int FileAccess = 3;
 			public const int InvalidOptions = 4;
+			public const int UnknownConnection = 5;
 		}
 
 		public int Run(Stopwatch sw)
 		{
 			Settings = Properties.Settings.Default;
 
-			Logger.Info("Using connection: {0}", Settings.DatabaseConnection);
-
-			SqlConnection conn = new SqlConnection(Settings.DatabaseConnection);
+			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[Settings.ConnectionString]);
+			SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Settings.ConnectionString].ToString());
 
 			try
 			{

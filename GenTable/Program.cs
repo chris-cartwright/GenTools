@@ -131,9 +131,8 @@ namespace GenTable
 				return Return.UnknownConnection;
 			}
 
-			Logger.Info("Using connection: {0}", Settings.Test);
-
-			SqlConnection conn = new SqlConnection(Settings.Test);
+			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[Settings.ConnectionString]);
+			SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Settings.ConnectionString].ToString());
 
 			try
 			{
@@ -195,6 +194,7 @@ namespace GenTable
 			Templates.File f = new Templates.File();
 			f.Session = new Dictionary<string, object>();
 			f.Session["classes"] = tbls.ToString();
+			f.Session["namespace"] = Settings.MasterNamespace;
 			f.Initialize();
 
 			try

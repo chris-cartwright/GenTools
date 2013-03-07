@@ -4,6 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="classes" type="System.String" #>
+<#@ parameter name="namespace" type="System.String" #>
 
 /*
 
@@ -17,7 +18,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace Models.Tables 
+namespace <#=namespace #>
 {
 	<#=classes #>
 }

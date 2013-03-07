@@ -1,84 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
+using Common;
 using Mono.Options;
-using System.Configuration;
 
 namespace GenProc
 {
-	public static class Helpers
-	{
-		public static readonly string[] Keywords = new string[]
-		{
-			 "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default",
-			 "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto",
-			 "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out",
-			 "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc",
-			 "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using",
-			 "virtual", "void", "volatile", "while"
-		};
-
-		// http://msdn.microsoft.com/en-us/library/cc716729.aspx
-		public static readonly Dictionary<string, Type> TypeMap = new Dictionary<string, Type>()
-		{
-			{ "nvarchar",			typeof(string) },
-			{ "varchar",			typeof(string) },
-			{ "int",				typeof(int) },
-			{ "bigint",				typeof(long) },
-			{ "smallint",			typeof(short) },
-			{ "bit",				typeof(bool) },
-			{ "datetime",			typeof(DateTime) },
-			{ "money",				typeof(decimal) },
-			{ "Flag",				typeof(bool) },
-			{ "hierarchyid",		typeof(string) },
-			{ "tinyint",			typeof(byte) },
-			{ "nchar",				typeof(char) },
-			{ "char",				typeof(char) },
-			{ "image",				typeof(byte[]) },
-			{ "uniqueidentifier",	typeof(Guid) },
-			{ "text",				typeof(string) },
-			{ "decimal",			typeof(decimal) },
-			{ "float",				typeof(float) },
-			{ "varbinary",			typeof(byte[]) },
-			{ "date",				typeof(DateTime) },
-			{ "sysname",			typeof(string) },
-            { "timestamp",          typeof(byte[]) }
-		};
-
-		public static readonly Version Version;
-		public static readonly string Revision;
-
-		static Helpers()
-		{
-			Version = Assembly.GetExecutingAssembly().GetName().Version;
-
-			object[] rev = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GitRevisionAttribute), true);
-			if (rev.Length > 0)
-				Revision = ((GitRevisionAttribute)rev[0]).Revision;
-			else
-				Revision = "unknown-e";
-		}
-
-		public static string CleanKeyword(this string str)
-		{
-			if (Keywords.Contains(str))
-				return "@" + str;
-			else
-				return str;
-		}
-
-		public static string CleanName(this string str)
-		{
-			return str.TrimStart('@').CleanKeyword();
-		}
-	}
-
 	public class Branch<T>
 	{
 		private static Branch<T> Resolve(Branch<T> branch, string[] parts)
@@ -297,6 +230,7 @@ namespace GenProc
 			public const int FileAccess = 3;
 			public const int InvalidOptions = 4;
 			public const int UnknownConnection = 5;
+			public const int Unknown = 255;
 		}
 
 		public int Run(Stopwatch sw)

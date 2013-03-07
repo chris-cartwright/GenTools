@@ -17,6 +17,7 @@ namespace GitVersion
 				Directory.SetCurrentDirectory(pwd);
 
 				string rev = "unknown";
+				bool dirty = true;
 				try
 				{
 					ProcessStartInfo git = new ProcessStartInfo("git", "rev-parse --short HEAD");
@@ -30,6 +31,18 @@ namespace GitVersion
 					proc.WaitForExit();
 
 					rev = proc.StandardOutput.ReadToEnd().Trim();
+
+					git = new ProcessStartInfo("git", "status --short");
+					git.RedirectStandardOutput = true;
+					git.UseShellExecute = false;
+					git.CreateNoWindow = true;
+
+					proc = new Process();
+					proc.StartInfo = git;
+					proc.Start();
+					proc.WaitForExit();
+
+					dirty = proc.StandardOutput.ReadLine() != null;
 				}
 				catch (Exception)
 				{
@@ -37,7 +50,8 @@ namespace GitVersion
 				}
 
 				StreamWriter sw = new StreamWriter("git.cs", false);
-				sw.WriteLine(String.Format("[assembly: GitRevision(\"{0}\")]", rev));
+				sw.WriteLine("using Common;\n");
+				sw.WriteLine(String.Format("[assembly: GitRevision(\"{0}\", {1})]", rev, dirty.ToString().ToLower()));
 				sw.Close();
 
 				return 0;

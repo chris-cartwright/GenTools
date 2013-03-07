@@ -3,22 +3,21 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-<#@ import namespace="System.Reflection" #>
-<#@ parameter name="namespace" type="System.String" #>
-<#@ parameter name="class" type="System.String" #>
+<#@ parameter name="classes" type="System.String" #>
 
 /*
 
-Generated using GenProc Version <#=Common.Helpers.VersionString #>
+Generated using GenTable Version <#=Common.Helpers.VersionString #>
 Generated on <#=DateTime.Now.ToString("dd MMM HH:mm:ss") #>
 
 */
 
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace <#=namespace #>
+namespace Models.Tables 
 {
-<#=class #>
+	<#=classes #>
 }

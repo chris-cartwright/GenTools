@@ -1,0 +1,65 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ parameter name="table" type="GenTable.Table" #>
+	public abstract class <#=table.NameClean #><T> where T : <#=table.NameClean #><T>, new()
+	{
+		public static T Populate(Dictionary<string, object> data)
+		{
+			T ret = new T();
+			<# foreach(Column col in table.Columns) { #>if(data.ContainsKey("<#=col.Name #>"))
+			{
+				ret.<#=col.NameClean #> = (<#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #>)data["<#=col.Name #>"];
+			}
+			<# } #>
+			return ret;
+		}
+
+		<#
+		GenTable.Column ident = table.Identity;
+		if(ident != null)
+		{
+			StringBuilder cols = new StringBuilder();
+			foreach(Column col in table.Columns)
+			{
+				cols.Append("[");
+				cols.Append(col.Name);
+				cols.Append("],");
+			}
+
+			string columns = cols.ToString().TrimEnd(',');
+		#>
+		public static T LoadFull(<#=ident.Type.Name #> id)
+		{
+			SqlConnection conn = new SqlConnection();
+			SqlCommand cmd = new SqlCommand();
+			cmd.Connection = conn;
+			cmd.CommandText = "select <#=columns #> from [<#=table.Name #>] where [<#=ident.Name #>]='@ID'";
+			cmd.Parameters.AddWithValue("@ID", id);
+
+			try
+			{
+				conn.Open();
+				SqlDataReader reader = cmd.ExecuteReader();
+				if(!reader.HasRows)
+					throw new Exception("Record does not exist.");
+
+				reader.Read();
+				T ret = new T();
+				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = (<#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #>)data["<#=col.Name #>"];
+				<# } #>
+				return ret;
+			}
+			finally
+			{
+				if(conn.State == ConnectionState.Open)
+					conn.Close();
+			}
+		}
+		<# } #>
+
+		<# foreach(Column col in table.Columns) { #>public <#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #> { get; set; }
+		<# } #>
+	}

@@ -150,3 +150,6 @@ $RECYCLE.BIN/
 /GitVersion.exe
 /GenProc/Templates/*.cs
 /GenProc/git.cs
+/GenTable/Templates/*.cs
+/GtnTable/git.cs
+/out.sql

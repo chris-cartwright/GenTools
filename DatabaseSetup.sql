@@ -1,4 +1,22 @@
 ﻿
+create procedure p_ListTables
+as
+
+select
+  t.name as 'table',
+  c.name as 'column',
+  c.column_id as 'priority',
+  ty.name as 'type',
+  c.is_nullable as 'nullable',
+  c.is_identity as 'identity'
+from sys.tables  t
+join sys.all_columns c on t.object_id = c.object_id
+join sys.types ty on c.user_type_id = ty.user_type_id
+where t.[type] = 'U'
+order by t.name
+
+go
+
 create procedure p_ListProcedures
 as
 
@@ -7,7 +25,7 @@ select
   p.name as 'Parameter',
   t.name as 'Type',
   p.is_output as 'Output',
-  dbo.GetParamDefault(p.name, OBJECT_DEFINITION(sp.object_id)) as 'Value'
+  dbo.GetParamDefault(p.name, object_definition(sp.object_id)) as 'Value'
 from sys.procedures sp
 join sys.parameters p
   on p.object_id=sp.object_id

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("GenProc")]
-[assembly: AssemblyDescription("Generates C# classes and functions for stored procedures.")]
+[assembly: AssemblyTitle("GenTable")]
+[assembly: AssemblyDescription("Generates C# classes for tables.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("GenProc")]
+[assembly: AssemblyProduct("GenTable")]
 [assembly: AssemblyCopyright("Copyright © 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b1936275-4d27-4d6e-b62d-b81701d700bc")]
+[assembly: Guid("81712da9-4326-4cfb-b691-6ada9b3bde35")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -59,7 +59,7 @@ namespace Common
 			if (rev.Length > 0)
 				Revision = (GitRevisionAttribute)rev[0];
 			else
-				Revision = new GitRevisionAttribute("unknown-e", true);
+				Revision = new GitRevisionAttribute("nogit", true);
 
 			VersionString = String.Format("{0}-{1}-{2}", Version, Revision.Revision, Revision.Dirty ? "dirty" : "clean");
 		}

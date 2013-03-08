@@ -88,7 +88,7 @@ namespace GenTable
 		{
 			Settings = Properties.Settings.Default;
 
-			Console.WriteLine("GenTable version {0}", Helpers.Version);
+			Console.WriteLine("GenTable version {0}", Helpers.VersionString);
 
 			bool help = false;
 			OptionSet opts = new OptionSet()

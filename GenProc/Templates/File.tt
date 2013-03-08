@@ -4,6 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="System.Reflection" #>
+<#@ import namespace="Common" #>
 <#@ parameter name="namespace" type="System.String" #>
 <#@ parameter name="class" type="System.String" #>
 

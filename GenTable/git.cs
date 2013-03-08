@@ -1,3 +1,3 @@
 using Common;
 
-[assembly: GitRevision("9516291", true)]
+[assembly: GitRevision("7d2cfaf", true)]

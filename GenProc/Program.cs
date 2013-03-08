@@ -152,7 +152,7 @@ namespace GenProc
 		{
 			Settings = Properties.Settings.Default;
 
-			Console.WriteLine("GenProc version {0}-{1}", Helpers.Version, Helpers.Revision);
+			Console.WriteLine("GenProc version {0}", Helpers.VersionString);
 
 			bool help = false;
 			OptionSet opts = new OptionSet()
@@ -262,7 +262,7 @@ namespace GenProc
 				Procedure proc = Procedure.None;
 				while (reader.Read())
 				{
-					string procName = reader["Procedure"].ToString();
+					string procName = reader["procedure"].ToString();
 					if (procName != proc.Original)
 					{
 						if (proc != Procedure.None)
@@ -275,11 +275,14 @@ namespace GenProc
 						proc = new Procedure(procName);
 					}
 
+					if (reader["parameter"] == DBNull.Value)
+						continue;
+
 					Parameter p = new Parameter(
-						reader["Parameter"].ToString(),
-						reader["Type"].ToString(),
-						Convert.ToBoolean(reader["Output"]),
-						reader["Value"].ToString().Trim()
+						reader["parameter"].ToString(),
+						reader["type"].ToString(),
+						Convert.ToBoolean(reader["output"]),
+						reader["value"].ToString().Trim()
 					);
 					if (!p.IsOutput)
 					{

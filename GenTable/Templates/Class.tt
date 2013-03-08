@@ -4,7 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="table" type="GenTable.Table" #>
-	public abstract class <#=table.NameClean #><T> where T : <#=table.NameClean #><T>, new()
+	public abstract class <#=table.NameClean #><T> : WrappedTable where T : <#=table.NameClean #><T>, new()
 	{
 		public static T Populate(Dictionary<string, object> data)
 		{
@@ -33,10 +33,10 @@
 		#>
 		public static T LoadFull(<#=ident.Type.Name #> id)
 		{
-			SqlConnection conn = new SqlConnection();
+			SqlConnection conn = new SqlConnection(ConnectionString);
 			SqlCommand cmd = new SqlCommand();
 			cmd.Connection = conn;
-			cmd.CommandText = "select <#=columns #> from [<#=table.Name #>] where [<#=ident.Name #>]='@ID'";
+			cmd.CommandText = "select <#=columns #> from [<#=table.Name #>] where [<#=ident.Name #>]=@ID";
 			cmd.Parameters.AddWithValue("@ID", id);
 
 			try
@@ -48,7 +48,7 @@
 
 				reader.Read();
 				T ret = new T();
-				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = <# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>reader["<#=col.Name #>"] as <#=col.Type.Name #>?<# } else { #>(<#=col.Type.Name #>)reader["<#=col.Name #>"]<# } #>;
+				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = <# if(!col.IsNull) { #>(<#=col.Type.Name #>)reader["<#=col.Name #>"]<# } else { #>reader["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray) { #>?<# } } #>;
 				<# } #>
 				return ret;
 			}

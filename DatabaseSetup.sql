@@ -10,8 +10,10 @@ select
   c.is_nullable as 'nullable',
   c.is_identity as 'identity'
 from sys.tables  t
-join sys.all_columns c on t.object_id = c.object_id
-join sys.types ty on c.user_type_id = ty.user_type_id
+join sys.all_columns c
+	on t.object_id = c.object_id
+join sys.types ty
+	on c.user_type_id = ty.user_type_id
 where t.[type] = 'U'
 order by t.name
 
@@ -21,15 +23,15 @@ create procedure p_ListProcedures
 as
 
 select
-  sp.name as 'Procedure',
-  p.name as 'Parameter',
-  t.name as 'Type',
-  p.is_output as 'Output',
-  dbo.GetParamDefault(p.name, object_definition(sp.object_id)) as 'Value'
+  sp.name as 'procedure',
+  p.name as 'parameter',
+  t.name as 'type',
+  p.is_output as 'output',
+  dbo.GetParamDefault(p.name, object_definition(sp.object_id)) as 'value'
 from sys.procedures sp
-join sys.parameters p
+left join sys.parameters p
   on p.object_id=sp.object_id
-join sys.types t
+left join sys.types t
   on t.user_type_id=p.user_type_id
 order by sp.name
 

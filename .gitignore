@@ -151,5 +151,5 @@ $RECYCLE.BIN/
 /GenProc/Templates/*.cs
 /GenProc/git.cs
 /GenTable/Templates/*.cs
-/GtnTable/git.cs
+/GenTable/git.cs
 /out.sql

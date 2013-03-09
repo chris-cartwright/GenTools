@@ -148,107 +148,31 @@ namespace GenProc
 	{
 		private static Properties.Settings Settings;
 
-		static int Main(string[] args)
+		public static int Main(string[] args)
 		{
 			Settings = Properties.Settings.Default;
 
-			Console.WriteLine("GenProc version {0}", Helpers.VersionString);
-
-			bool help = false;
 			OptionSet opts = new OptionSet()
 			{
-				{ "v", "Increase verbosity level.", v => Settings.LoggingLevel++ },
-				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => Settings.LoggingLevel = v },
 				{ "p|prefix:", "Prefix to use on naming collisions.", (string v) => Settings.CollisionPrefix = v },
 				{ "m|monolithic", "Enable monolithic mode.", v => Settings.Monolithic = v != null },
-				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => Settings.MasterNamespace = v },
-				{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => Settings.MiscClass = v },
-				{ "c|connection:", "Name of connection string to use.", (string v) => Settings.ConnectionString = v },
-				{ "h|help", "Show this message.", v => help = v != null }
+				{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => Settings.MiscClass = v }
 			};
 
-			List<string> extra = null;
-			try
-			{
-				extra = opts.Parse(args);
-			}
-			catch(OptionException ex)
-			{
-				Console.WriteLine("GenProc: {0}", ex.Message);
-				Console.WriteLine("Try `GenProc --help` for more information.");
-				return Return.InvalidOptions;
-			}
+			string[] extra;
+			SqlConnection conn;
+			int ret = Helpers.Setup(args, ref Settings, out extra, out conn, opts);
+			if (ret != ReturnValue.Success)
+				return ret;
 
-			if(help)
-			{
-				PrintHelp(opts);
-				return Return.Success;
-			}
-
-			Logger.Current = (Logger.Level)Settings.LoggingLevel;
-			Logger.Debug("Logging level: {0}", Logger.Current);
-
-			if (extra.Count > 0)
+			if (extra.Length > 0)
 			{
 				Settings.OutputDirectory = extra.First();
 				Settings.MonolithicOutput = extra.First();
 			}
 
-			Settings.ConnectionString = "GenProc.Properties.Settings." + Settings.ConnectionString;
-			if (ConfigurationManager.ConnectionStrings[Settings.ConnectionString] == null)
-			{
-				Logger.Error("Unknown connection: {0}", Settings.ConnectionString);
-				return Return.UnknownConnection;
-			}
-
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
-
-			int ret = (new Program()).Run(sw);
-
-			sw.Stop();
-			Logger.Info("Total time: {0}", sw.Elapsed);
-
-			return ret;
-		}
-
-		private static void PrintHelp(OptionSet opts)
-		{
-			Console.WriteLine("Usage: GenProc [options] [output file/folder]");
-			Console.WriteLine("Generate C# code for stored procedures in a SQL Server database.");
-			Console.WriteLine("If no output file/folder is specified, the respective values from app.config are used.");
-			Console.WriteLine();
-			Console.WriteLine("Options:");
-			opts.WriteOptionDescriptions(Console.Out);
-		}
-
-		private static class Return
-		{
-			public const int Success = 0;
-			public const int ConnectFailed = 1;
-			public const int ParseError = 2;
-			public const int FileAccess = 3;
-			public const int InvalidOptions = 4;
-			public const int UnknownConnection = 5;
-			public const int Unknown = 255;
-		}
-
-		public int Run(Stopwatch sw)
-		{
-			Settings = Properties.Settings.Default;
-
-			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[Settings.ConnectionString]);
-			SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Settings.ConnectionString].ToString());
-
-			try
-			{
-				conn.Open();
-			}
-			catch (SqlException ex)
-			{
-				Logger.Error("Could not connect: {0}", ex.Message);
-				return Return.ConnectFailed;
-			}
 
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
 			TimeSpan inserts = new TimeSpan();
@@ -313,7 +237,7 @@ namespace GenProc
 			catch (Exception ex)
 			{
 				Logger.Error("Error parsing data: {0}", ex.Message);
-				return Return.ParseError;
+				return ReturnValue.ParseError;
 			}
 			finally
 			{
@@ -357,21 +281,24 @@ namespace GenProc
 				catch (UnauthorizedAccessException ex)
 				{
 					Logger.Error("Could not access output file: {0}", ex.Message);
-					return Return.FileAccess;
+					return ReturnValue.FileAccess;
 				}
 				catch (Exception ex)
 				{
 					Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
-					return Return.FileAccess;
+					return ReturnValue.FileAccess;
 				}
 			}
 			else
 				WriteCodeMulti(trunk, path, "");
 
-			return Return.Success;
+			sw.Stop();
+			Logger.Info("Total time: {0}", sw.Elapsed);
+
+			return ReturnValue.Success;
 		}
 
-		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
+		private static void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
 		{
 			node = node.TrimStart('.');
 			Directory.CreateDirectory(path);
@@ -417,7 +344,7 @@ namespace GenProc
 			tw.Close();
 		}
 
-		private void WriteCodeMonolithic(TextWriter tw, Branch<Procedure> branch, bool first = false)
+		private static void WriteCodeMonolithic(TextWriter tw, Branch<Procedure> branch, bool first = false)
 		{
 			StringWriter classes = new StringWriter();
 			foreach (Branch<Procedure> brch in branch.Branches)

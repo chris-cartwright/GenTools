@@ -88,61 +88,15 @@ namespace GenTable
 		{
 			Settings = Properties.Settings.Default;
 
-			Console.WriteLine("GenTable version {0}", Helpers.VersionString);
+			string[] extra;
+			SqlConnection conn;
+			int ret = Helpers.Setup(args, ref Settings, out extra, out conn);
 
-			bool help = false;
-			OptionSet opts = new OptionSet()
-			{
-				{ "v", "Increase verbosity level.", v => Settings.LoggingLevel++ },
-				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => Settings.LoggingLevel = v },
-				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => Settings.MasterNamespace = v },
-				{ "c|connection:", "Name of connection string to use.", (string v) => Settings.ConnectionString = v },
-				{ "h|help", "Show this message.", v => help = v != null }
-			};
+			if (ret != ReturnValue.Success)
+				return ret;
 
-			List<string> extra = null;
-			try
-			{
-				extra = opts.Parse(args);
-			}
-			catch (OptionException ex)
-			{
-				Console.WriteLine("GenTable: {0}", ex.Message);
-				Console.WriteLine("Try `GenTable --help` for more information.");
-				return Return.InvalidOptions;
-			}
-
-			if (help)
-			{
-				PrintHelp(opts);
-				return Return.Success;
-			}
-
-			Logger.Current = (Logger.Level)Settings.LoggingLevel;
-			Logger.Debug("Logging level: {0}", Logger.Current);
-
-			if (extra.Count > 0)
+			if (extra.Length > 0)
 				Settings.OutputFile = extra.First();
-
-			Settings.ConnectionString = "GenTable.Properties.Settings." + Settings.ConnectionString;
-			if (ConfigurationManager.ConnectionStrings[Settings.ConnectionString] == null)
-			{
-				Logger.Error("Unknown connection: {0}", Settings.ConnectionString);
-				return Return.UnknownConnection;
-			}
-
-			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[Settings.ConnectionString]);
-			SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings[Settings.ConnectionString].ToString());
-
-			try
-			{
-				conn.Open();
-			}
-			catch (Exception ex)
-			{
-				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
-				return Return.ConnectFailed;
-			}
 
 			SqlCommand cmd = new SqlCommand("p_ListTables", conn);
 			cmd.CommandType = CommandType.StoredProcedure;
@@ -176,7 +130,7 @@ namespace GenTable
 			catch (Exception ex)
 			{
 				Logger.Error("Parse error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return Return.Unknown;
+				return ReturnValue.Unknown;
 			}
 
 			Logger.Info("Done database stuff");
@@ -213,36 +167,15 @@ namespace GenTable
 			catch (UnauthorizedAccessException ex)
 			{
 				Logger.Error("Could not access output file: {0}", ex.Message);
-				return Return.FileAccess;
+				return ReturnValue.FileAccess;
 			}
 			catch (Exception ex)
 			{
 				Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return Return.FileAccess;
+				return ReturnValue.FileAccess;
 			}
 
-			return Return.Success;
-		}
-
-		private static void PrintHelp(OptionSet opts)
-		{
-			Console.WriteLine("Usage: GenTable [options] [output file/folder]");
-			Console.WriteLine("Generate C# code for tables in a SQL Server database.");
-			Console.WriteLine("If no output file/folder is specified, the respective values from app.config are used.");
-			Console.WriteLine();
-			Console.WriteLine("Options:");
-			opts.WriteOptionDescriptions(Console.Out);
-		}
-
-		private static class Return
-		{
-			public const int Success = 0;
-			public const int ConnectFailed = 1;
-			public const int ParseError = 2;
-			public const int FileAccess = 3;
-			public const int InvalidOptions = 4;
-			public const int UnknownConnection = 5;
-			public const int Unknown = 255;
+			return ReturnValue.Success;
 		}
 	}
 }

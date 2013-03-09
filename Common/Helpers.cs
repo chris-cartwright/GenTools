@@ -1,14 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Mono.Options;
 
 namespace Common
 {
 	public static class Helpers
 	{
+		private class Settings
+		{
+			public ushort LoggingLevel { get; set; }
+			public string MasterNamespace { get; set; }
+			public string ConnectionString { get; set; }
+
+			public void CopyTo<T>(ref T obj)
+			{
+				Type type = typeof(T);
+				foreach (PropertyInfo pi in typeof(Settings).GetProperties())
+					type.GetProperty(pi.Name).SetValue(obj, pi.GetValue(this, null), null);
+			}
+
+			public void CopyFrom<T>(ref T obj)
+			{
+				Type type = typeof(T);
+				foreach (PropertyInfo pi in typeof(Settings).GetProperties())
+					pi.SetValue(this, type.GetProperty(pi.Name).GetValue(obj, null), null);
+			}
+		}
+
 		public static readonly string[] Keywords = new string[]
 		{
 			 "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default",
@@ -49,19 +74,21 @@ namespace Common
 		public static readonly Version Version;
 		public static readonly GitRevisionAttribute Revision;
 		public static readonly string VersionString;
+		public static readonly string AssemblyName;
+		public static readonly string Description;
 
 		static Helpers()
 		{
 			Assembly assembly = Assembly.GetEntryAssembly();
-			Version = assembly.GetName().Version;
+			AssemblyName assemblyName = assembly.GetName();
+			object[] attributes = assembly.GetCustomAttributes(false);
 
-			object[] rev = assembly.GetCustomAttributes(typeof(GitRevisionAttribute), true);
-			if (rev.Length > 0)
-				Revision = (GitRevisionAttribute)rev[0];
-			else
-				Revision = new GitRevisionAttribute("nogit", true);
-
+			Version = assemblyName.Version;
+			Revision = attributes.OfType<GitRevisionAttribute>().FirstOrDefault() ?? new GitRevisionAttribute("nogit", true);
 			VersionString = String.Format("{0}-{1}-{2}", Version, Revision.Revision, Revision.Dirty ? "dirty" : "clean");
+
+			AssemblyName = assemblyName.Name;
+			Description = attributes.OfType<AssemblyDescriptionAttribute>().First().Description;
 		}
 
 		public static string CleanKeyword(this string str)
@@ -75,6 +102,94 @@ namespace Common
 		public static string CleanName(this string str)
 		{
 			return str.TrimStart('@').CleanKeyword();
+		}
+
+		public static int Setup<T>(string[] args, ref T appSettings, out string[] extra, out SqlConnection conn, OptionSet opts = null)
+		{
+			Console.WriteLine("{0} version {1}", AssemblyName, VersionString);
+
+			extra = new string[0];
+			conn = null;
+
+			ushort verbosity = 0;
+			Settings settings = new Settings();
+			settings.CopyFrom(ref appSettings);
+
+			bool help = false;
+			OptionSet options = new OptionSet()
+			{
+				{ "v", "Increase verbosity level.", v => verbosity++ },
+				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => settings.LoggingLevel = v },
+				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => settings.MasterNamespace = v },
+				{ "c|connection:", "Name of connection string to use.", (string v) => settings.ConnectionString = v },
+				{ "h|help", "Show this message.", v => help = v != null }
+			};
+
+			if (opts != null)
+			{
+				foreach (Option opt in opts)
+					options.Add(opt);
+			}
+
+			try
+			{
+				extra = options.Parse(args).ToArray();
+			}
+			catch (OptionException ex)
+			{
+				Console.WriteLine("{0}: {1}", AssemblyName, ex.Message);
+				Console.WriteLine("Try `{0} --help` for more information.", AssemblyName);
+				return ReturnValue.InvalidOptions;
+			}
+
+			if (help)
+			{
+				PrintHelp(opts);
+				return ReturnValue.Success;
+			}
+
+			if (verbosity != 0)
+				settings.LoggingLevel = verbosity;
+
+			Logger.Current = (Logger.Level)settings.LoggingLevel;
+			Logger.Debug("Logging level: {0}", Logger.Current);
+
+			string connectionName = AssemblyName + ".Properties.Settings." + settings.ConnectionString;
+			if (ConfigurationManager.ConnectionStrings[connectionName] == null)
+			{
+				connectionName = settings.ConnectionString;
+				if (ConfigurationManager.ConnectionStrings[connectionName] == null)
+				{
+					Logger.Error("Unknown connection: {0}", connectionName);
+					return ReturnValue.UnknownConnection;
+				}
+			}
+
+			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[connectionName]);
+			conn = new SqlConnection(ConfigurationManager.ConnectionStrings[connectionName].ToString());
+
+			try
+			{
+				conn.Open();
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
+				return ReturnValue.ConnectFailed;
+			}
+
+			settings.CopyTo(ref appSettings);
+			return ReturnValue.Success;
+		}
+
+		public static void PrintHelp(OptionSet opts)
+		{
+			Console.WriteLine("Usage: {0} [options] [output file/folder]", AssemblyName);
+			Console.WriteLine(Description);
+			Console.WriteLine("If no output file/folder is specified, the respective values from app.config are used.");
+			Console.WriteLine();
+			Console.WriteLine("Options:");
+			opts.WriteOptionDescriptions(Console.Out);
 		}
 	}
 }

@@ -1,4 +1,14 @@
 ﻿
+if exists (
+  select *
+  from sys.objects
+  where object_id = object_id(N'p_ListTables')
+    and [type] in (N'P', N'PC')
+)
+drop procedure p_ListTables
+
+go
+
 create procedure p_ListTables
 as
 
@@ -15,7 +25,61 @@ join sys.all_columns c
 join sys.types ty
 	on c.user_type_id = ty.user_type_id
 where t.[type] = 'U'
-order by t.name
+order by t.name, c.column_id
+
+go
+
+if exists (
+  select *
+  from sys.objects
+  where object_id = object_id(N'p_ListTypeTables')
+    and [type] in (N'P', N'PC')
+)
+drop procedure p_ListTypeTables
+
+go
+
+create procedure p_ListTypeTables
+as
+
+with table_cte (name, object_id, [type])
+as (
+  select t.name, t.object_id, t.[type]
+  from sys.tables t
+  join sys.all_columns c
+	  on t.object_id = c.object_id
+    and c.is_identity = 1
+)
+select
+  t.name as 'table',
+  c.name as 'column',
+  c.column_id as 'priority',
+  ty.name as 'type',
+  c.is_nullable as 'nullable',
+  c.is_identity as 'identity'
+from table_cte t
+join sys.all_columns c
+	on t.object_id = c.object_id
+join sys.types ty
+	on c.user_type_id = ty.user_type_id
+where t.[type] = 'U'
+  and (
+    t.name like '%Type'
+    or t.name like '%Types'
+    or t.name like '%Category'
+    or t.name like '%Categories'
+  )
+order by t.name, c.column_id
+
+go
+
+if exists (
+  select *
+  from sys.objects
+  where object_id = object_id(N'p_ListProcedures')
+    and [type] in (N'P', N'PC')
+)
+drop procedure p_ListProcedures
 
 go
 
@@ -34,6 +98,16 @@ left join sys.parameters p
 left join sys.types t
   on t.user_type_id=p.user_type_id
 order by sp.name
+
+go
+
+if exists (
+  select *
+  from sys.objects
+  where object_id = object_id(N'GetParamDefault')
+    and [type] in (N'FN')
+)
+drop function GetParamDefault
 
 go
 

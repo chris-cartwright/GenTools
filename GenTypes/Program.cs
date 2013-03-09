@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,8 @@ namespace GenTypes
 
 			if (extra.Length > 0)
 				Settings.OutputFile = extra.First();
+
+			SqlCommand cmd = new SqlCommand("p_ListTypeTables", conn) { CommandType = CommandType.StoredProcedure };
 
 			return ReturnValue.Success;
 		}

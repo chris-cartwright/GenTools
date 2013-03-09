@@ -1,7 +1,7 @@
 
 import random
 
-words = [ "First", "Second", "Third", "Fourth", "Fith", "Sixth" ]
+words = [ "First", "Second", "Third", "Fourth", "Fith", "Sixth", "Type", "Types", "Category", "Categories" ]
 types = [ "int", "nvarchar(max)", "nvarchar(5)", "bit", "bigint", "smallint", "tinyint", "text", "float", "date", "money" ]
 
 procs = set()

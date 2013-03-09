@@ -98,8 +98,7 @@ namespace GenTable
 			if (extra.Length > 0)
 				Settings.OutputFile = extra.First();
 
-			SqlCommand cmd = new SqlCommand("p_ListTables", conn);
-			cmd.CommandType = CommandType.StoredProcedure;
+			SqlCommand cmd = new SqlCommand("p_ListTables", conn) { CommandType = CommandType.StoredProcedure };
 
 			List<Table> tables = new List<Table>();
 			try

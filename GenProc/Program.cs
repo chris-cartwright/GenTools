@@ -177,8 +177,7 @@ namespace GenProc
 			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
 			TimeSpan inserts = new TimeSpan();
 
-			SqlCommand cmd = new SqlCommand("p_ListProcedures", conn);
-			cmd.CommandType = CommandType.StoredProcedure;
+			SqlCommand cmd = new SqlCommand("p_ListProcedures", conn) { CommandType = CommandType.StoredProcedure };
 
 			try
 			{

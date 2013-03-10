@@ -142,7 +142,10 @@ namespace GenTypes
 					if (tableName != table.Name)
 					{
 						if (table != Table.None)
+						{
+							Logger.Debug("Found table: {0}", table.Name);
 							tables.Add(table);
+						}
 
 						table = new Table(tableName);
 					}
@@ -153,6 +156,8 @@ namespace GenTypes
 				}
 
 				reader.Close();
+
+				Logger.Debug("Found table: {0}", table.Name);
 				tables.Add(table);
 
 				foreach (Table t in tables)
@@ -164,6 +169,7 @@ namespace GenTypes
 					Column col = t.Columns.Where(p => p.Name == dataColumn && p.Type == typeof(string) && !p.IsNull).FirstOrDefault();
 					if (col == null)
 					{
+						Logger.Info("Could not find value column: {0}", t.Name);
 						reader.Close();
 						continue;
 					}
@@ -184,6 +190,9 @@ namespace GenTypes
 							break;
 						}
 					}
+
+					if (map.Count == 0)
+						Logger.Info("Table was empty: {0}", t.Name);
 
 					if (!duplicate && map.Count > 0)
 						mappings.Add(map);

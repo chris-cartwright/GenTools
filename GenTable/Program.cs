@@ -150,29 +150,13 @@ namespace GenTable
 			f.Session["namespace"] = Settings.MasterNamespace;
 			f.Initialize();
 
-			try
-			{
-				if (File.Exists(Settings.OutputFile))
-				{
-					FileAttributes attr = File.GetAttributes(Settings.OutputFile);
-					if ((attr & FileAttributes.ReadOnly) > 0)
-						File.SetAttributes(Settings.OutputFile, attr ^ FileAttributes.ReadOnly);
-				}
+			StreamWriter writer;
+			ret = Helpers.OpenWriter(Settings.OutputFile, out writer);
+			if (ret != ReturnValue.Success)
+				return ret;
 
-				StreamWriter writer = new StreamWriter(File.Open(Settings.OutputFile, FileMode.Create));
-				writer.Write(f.TransformText());
-				writer.Close();
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				Logger.Error("Could not access output file: {0}", ex.Message);
-				return ReturnValue.FileAccess;
-			}
-			catch (Exception ex)
-			{
-				Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return ReturnValue.FileAccess;
-			}
+			writer.Write(f.TransformText());
+			writer.Close();
 
 			return ReturnValue.Success;
 		}

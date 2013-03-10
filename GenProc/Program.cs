@@ -264,29 +264,13 @@ namespace GenProc
 				f.Session["class"] = str.ToString();
 				f.Initialize();
 
-				try
-				{
-					if (File.Exists(Settings.MonolithicOutput))
-					{
-						FileAttributes attr = File.GetAttributes(Settings.MonolithicOutput);
-						if ((attr & FileAttributes.ReadOnly) > 0)
-							File.SetAttributes(Settings.MonolithicOutput, attr ^ FileAttributes.ReadOnly);
-					}
+				StreamWriter writer;
+				ret = Helpers.OpenWriter(Settings.MonolithicOutput, out writer);
+				if (ret != ReturnValue.Success)
+					return ret;
 
-					StreamWriter writer = new StreamWriter(File.Open(Settings.MonolithicOutput, FileMode.Create));
-					writer.Write(f.TransformText());
-					writer.Close();
-				}
-				catch (UnauthorizedAccessException ex)
-				{
-					Logger.Error("Could not access output file: {0}", ex.Message);
-					return ReturnValue.FileAccess;
-				}
-				catch (Exception ex)
-				{
-					Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
-					return ReturnValue.FileAccess;
-				}
+				writer.Write(f.TransformText());
+				writer.Close();
 			}
 			else
 				WriteCodeMulti(trunk, path, "");

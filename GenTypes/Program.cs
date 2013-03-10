@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Common;
 
 namespace GenTypes
@@ -128,11 +130,12 @@ namespace GenTypes
 
 			SqlCommand cmd = new SqlCommand("p_ListTypeTables", conn) { CommandType = CommandType.StoredProcedure };
 
-			List<Table> tables = new List<Table>();
+			List<Mapping> mappings = new List<Mapping>();
 			try
 			{
 				SqlDataReader reader = cmd.ExecuteReader();
 				Table table = Table.None;
+				List<Table> tables = new List<Table>();
 				while (reader.Read())
 				{
 					string tableName = reader["table"].ToString();
@@ -149,17 +152,21 @@ namespace GenTypes
 					table.Columns.Add(col);
 				}
 
+				reader.Close();
 				tables.Add(table);
 
-				List<Mapping> mappings = new List<Mapping>();
 				foreach (Table t in tables)
 				{
-					reader.NextResult();
+					SqlCommand fetcher = new SqlCommand("select * from [" + t.Name + "]", conn);
+					reader = fetcher.ExecuteReader();
 
 					string dataColumn = t.Identity.Name.Substring(0, t.Identity.Name.Length - 2);
 					Column col = t.Columns.Where(p => p.Name == dataColumn && p.Type == typeof(string) && !p.IsNull).FirstOrDefault();
 					if (col == null)
+					{
+						reader.Close();
 						continue;
+					}
 
 					Mapping map = new Mapping()
 					{
@@ -172,14 +179,16 @@ namespace GenTypes
 					{
 						if (!map.Add(new Data() { ID = reader[t.Identity.Name], Name = reader[col.Name].ToString() }))
 						{
-							Logger.Error("Table contains duplicate values: {0}", t.Name);
+							Logger.Warn("Table contains duplicate values: {0}", t.Name);
 							duplicate = true;
 							break;
 						}
 					}
 
-					if (!duplicate)
+					if (!duplicate && map.Count > 0)
 						mappings.Add(map);
+
+					reader.Close();
 				}
 			}
 			catch (Exception ex)
@@ -192,6 +201,29 @@ namespace GenTypes
 				if (conn.State == ConnectionState.Open)
 					conn.Close();
 			}
+
+			StringBuilder classes = new StringBuilder();
+			foreach(Mapping map in mappings)
+			{
+				Templates.ClassBase cls = null;
+				Type type = Type.GetType("GenTypes.Templates." + Settings.Language + ".Class");
+				cls = (Templates.ClassBase)Activator.CreateInstance(type);
+				cls.Assign(map);
+				classes.Append(cls.TransformText());
+			}
+
+			Templates.FileBase file = null;
+			Type fileType = Type.GetType("GenTypes.Templates." + Settings.Language + ".File");
+			file = (Templates.FileBase)Activator.CreateInstance(fileType);
+			file.Assign(classes.ToString(), Settings.MasterNamespace);
+
+			StreamWriter writer;
+			ret = Helpers.OpenWriter(Settings.OutputFile, out writer);
+			if (ret != ReturnValue.Success)
+				return ret;
+
+			writer.Write(file.TransformText());
+			writer.Close();
 
 			return ReturnValue.Success;
 		}

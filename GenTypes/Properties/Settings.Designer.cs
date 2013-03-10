@@ -35,7 +35,7 @@ namespace GenTypes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Test")]
+        [global::System.Configuration.DefaultSettingValueAttribute("KnownState")]
         public string ConnectionString {
             get {
                 return ((string)(this["ConnectionString"]));
@@ -88,6 +88,18 @@ namespace GenTypes.Properties {
         public string KnownState {
             get {
                 return ((string)(this["KnownState"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("CSharp")]
+        public string Language {
+            get {
+                return ((string)(this["Language"]));
+            }
+            set {
+                this["Language"] = value;
             }
         }
     }

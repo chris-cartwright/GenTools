@@ -42,15 +42,6 @@ go
 create procedure p_ListTypeTables
 as
 
-declare @Table table (
-  [table] sysname
-, [column] sysname
-, [priority] int
-, [type] sysname
-, nullable bit
-, [identity] bit
-)
-
 ;with table_cte (name, object_id, [type])
 as (
   select t.name, t.object_id, t.[type]
@@ -59,7 +50,6 @@ as (
 	  on t.object_id = c.object_id
     and c.is_identity = 1
 )
-insert into @Table
 select
   t.name as 'table',
   c.name as 'column',
@@ -80,28 +70,6 @@ where t.[type] = 'U'
     or t.name like '%Categories'
   )
 order by t.name, c.column_id
-
-select * from @Table
-
-declare @Name sysname
-declare cur cursor for
-  select [table] from @Table
-  order by [table]
-
-open cur
-
-fetch next from cur
-into @Name
-
-while @@fetch_status = 0 begin
-  exec('select * from ' + @Name)
-
-  fetch next from cur
-  into @Name
-end
-
-close cur
-deallocate cur
 
 go
 

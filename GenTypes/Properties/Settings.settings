@@ -10,7 +10,7 @@
       <Value Profile="(Default)">Data Source=.\SQLEXPRESS;Integrated Security=True;Database=Test</Value>
     </Setting>
     <Setting Name="ConnectionString" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Test</Value>
+      <Value Profile="(Default)">KnownState</Value>
     </Setting>
     <Setting Name="OutputFile" Type="System.String" Scope="User">
       <Value Profile="(Default)">Test.cs</Value>
@@ -27,6 +27,9 @@
   &lt;ConnectionString&gt;Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState&lt;/ConnectionString&gt;
 &lt;/SerializableConnectionString&gt;</DesignTimeValue>
       <Value Profile="(Default)">Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState</Value>
+    </Setting>
+    <Setting Name="Language" Type="System.String" Scope="User">
+      <Value Profile="(Default)">CSharp</Value>
     </Setting>
   </Settings>
 </SettingsFile>

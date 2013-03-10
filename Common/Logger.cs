@@ -19,10 +19,12 @@ namespace Common
 
 			if (level == Level.Error)
 			{
+				Console.Error.Write("[{0}] ", Enum.GetName(typeof(Level), level));
 				Console.Error.WriteLine(message, repl);
 				return;
 			}
 
+			Console.Write("[{0}] ", Enum.GetName(typeof(Level), level));
 			Console.WriteLine(message, repl);
 		}
 

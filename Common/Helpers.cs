@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Mono.Options;
 
@@ -101,7 +103,15 @@ namespace Common
 
 		public static string CleanName(this string str)
 		{
-			return str.TrimStart('@').CleanKeyword();
+			string ret = str;
+
+			if (Char.IsDigit(ret[0]))
+				ret = "_" + ret.Substring(1);
+
+			ret = new Regex("[^a-zA-Z0-9]").Replace(ret, "_");
+			ret = new Regex("_+").Replace(ret, "_");
+
+			return ret.TrimStart('@').CleanKeyword();
 		}
 
 		public static int Setup<T>(string[] args, ref T appSettings, out string[] extra, out SqlConnection conn, OptionSet opts = null)
@@ -190,6 +200,35 @@ namespace Common
 			Console.WriteLine();
 			Console.WriteLine("Options:");
 			opts.WriteOptionDescriptions(Console.Out);
+		}
+
+		public static int OpenWriter(string fileName, out StreamWriter file)
+		{
+			file = null;
+
+			try
+			{
+				if (File.Exists(fileName))
+				{
+					FileAttributes attr = File.GetAttributes(fileName);
+					if ((attr & FileAttributes.ReadOnly) > 0)
+						File.SetAttributes(fileName, attr ^ FileAttributes.ReadOnly);
+				}
+
+				file = new StreamWriter(File.Open(fileName, FileMode.Create));
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				Logger.Error("Could not access output file: {0}", ex.Message);
+				return ReturnValue.FileAccess;
+			}
+			catch (Exception ex)
+			{
+				Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
+				return ReturnValue.FileAccess;
+			}
+
+			return ReturnValue.Success;
 		}
 	}
 }

@@ -103,7 +103,10 @@ namespace Common
 
 		public static string CleanName(this string str)
 		{
-			string ret = str.Trim();
+			if (str.Length == 0)
+				return String.Empty;
+
+			string ret = str.Trim().TrimStart('@');
 
 			if (Char.IsDigit(ret[0]))
 				ret = "_" + ret.Substring(1);
@@ -111,7 +114,7 @@ namespace Common
 			ret = new Regex(@"[^\w0-9]").Replace(ret, "_");
 			ret = new Regex("_+").Replace(ret, "_");
 
-			return ret.TrimStart('@').CleanKeyword();
+			return ret.CleanKeyword();
 		}
 
 		public static int Setup<T>(string[] args, ref T appSettings, out string[] extra, out SqlConnection conn, OptionSet opts = null)

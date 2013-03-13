@@ -3,10 +3,22 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#
+
+string[] parts = Namespace.Split('.');
+string cls = parts[parts.Length - 1];
+string nspc = String.Join(".", parts.Take(parts.Length - 1));
+
+#>
 using System;
 using System.Collections.Generic;
 
-static class <#=Namespace #>
+<# if(nspc.Length > 0) { #>namespace <#=nspc #>
+{
+<# } #>
+public static class <#=cls #>
 {
 	<#=Classes #>
 }
+<# if(nspc.Length > 0) { #>
+}<# } #>

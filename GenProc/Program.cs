@@ -49,6 +49,9 @@ namespace GenProc
 			}
 
 			Branch<T> ret = Resolve(this, parts);
+			if (ret.Leaves.Contains(leaf))
+				throw new ArgumentException("Cannot have duplicate leaves.");
+
 			ret.Leaves.Add(leaf);
 			return ret;
 		}

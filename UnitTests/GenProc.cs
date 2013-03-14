@@ -56,6 +56,7 @@ namespace UnitTests
 				Assert.AreEqual(1, tree.Branches.Count);
 				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
 				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
 				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
 				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
 
@@ -108,6 +109,29 @@ namespace UnitTests
 				Assert.AreEqual(2, tree.Branches[2].Branches[0].Branches[0].Leaves.Count);
 				Assert.AreEqual(i, tree.Branches[2].Branches[0].Branches[0].Leaves[1]);
 			}
+
+			[Test]
+			[ExpectedException(typeof(ArgumentException), ExpectedMessage="Cannot have duplicate leaves.")]
+			public void InsertDuplicate()
+			{
+				int i = 0;
+
+				tree.Insert(new string[] { "Branch 1", "Sub 1" }, i);
+				Assert.AreEqual(1, tree.Branches.Count);
+				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
+				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
+
+				tree.Insert(new string[] { "Branch 1", "Sub 1" }, i);
+				Assert.AreEqual(1, tree.Branches.Count);
+				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
+				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
+			}
 		}
 
 		[TestFixture]
@@ -155,6 +179,42 @@ namespace UnitTests
 
 				p = new global::GenProc.Parameter("Test 4", "DatE", true, null);
 				Assert.AreEqual(typeof(DateTime), p.Type);
+			}
+		}
+
+		[TestFixture]
+		public class Procedure
+		{
+			global::GenProc.Procedure p;
+
+			[Test]
+			public void Name()
+			{
+				p = new global::GenProc.Procedure("p_Test_Name");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("p_Test_Name", p.Original);
+				Assert.AreEqual("Name", p.Name);
+				Assert.AreEqual("Name", p.NameClean);
+				Assert.AreEqual(new string[] { "Test" }, p.Path);
+
+				p = new global::GenProc.Procedure("Test_Name");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("Test_Name", p.Original);
+				Assert.AreEqual("Name", p.Name);
+				Assert.AreEqual("Name", p.NameClean);
+				Assert.AreEqual(new string[] { "Test" }, p.Path);
+
+				p = new global::GenProc.Procedure("TestName");
+
+				p = new global::GenProc.Procedure("Test_Second");
+
+				p = new global::GenProc.Procedure("Test_Third");
+
+				p = new global::GenProc.Procedure("Second_new");
+
+				p = new global::GenProc.Procedure("Third_while");
+
+				p = new global::GenProc.Procedure("p_Three_Deep_Procedure");
 			}
 		}
     }

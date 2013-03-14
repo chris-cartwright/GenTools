@@ -83,6 +83,7 @@ namespace GenProc
 			IsOutput = output;
 			Default = def;
 
+			sqlType = sqlType.ToLower();
 			if (Helpers.TypeMap.ContainsKey(sqlType))
 				Type = Helpers.TypeMap[sqlType];
 			else

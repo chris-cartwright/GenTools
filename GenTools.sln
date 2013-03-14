@@ -12,7 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		DatabaseSetup.sql = DatabaseSetup.sql
 		gensql.py = gensql.py
-		KnownState.sql = KnownState.sql
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenTable", "GenTable\GenTable.csproj", "{8DA05974-3DB9-44AD-A158-B20B551F1A5F}"
@@ -23,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{5E9CF618-BB82-49BE-A189-1084BDD01C15}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenTypes", "GenTypes\GenTypes.csproj", "{3C8CF296-39DF-4907-BE82-3FD57877FADF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{CD7646E5-0E7E-43B7-8917-A9D0DC317B85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +51,10 @@ Global
 		{3C8CF296-39DF-4907-BE82-3FD57877FADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C8CF296-39DF-4907-BE82-3FD57877FADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C8CF296-39DF-4907-BE82-3FD57877FADF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD7646E5-0E7E-43B7-8917-A9D0DC317B85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD7646E5-0E7E-43B7-8917-A9D0DC317B85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD7646E5-0E7E-43B7-8917-A9D0DC317B85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD7646E5-0E7E-43B7-8917-A9D0DC317B85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -15,7 +15,7 @@ namespace Common
 {
 	public static class Helpers
 	{
-		private class Settings
+		internal class Settings
 		{
 			public ushort LoggingLevel { get; set; }
 			public string MasterNamespace { get; set; }
@@ -57,7 +57,7 @@ namespace Common
 			{ "bit",				typeof(bool) },
 			{ "datetime",			typeof(DateTime) },
 			{ "money",				typeof(decimal) },
-			{ "Flag",				typeof(bool) },
+			{ "flag",				typeof(bool) },
 			{ "hierarchyid",		typeof(string) },
 			{ "tinyint",			typeof(byte) },
 			{ "nchar",				typeof(char) },
@@ -82,6 +82,9 @@ namespace Common
 		static Helpers()
 		{
 			Assembly assembly = Assembly.GetEntryAssembly();
+			if (assembly == null)
+				assembly = Assembly.GetExecutingAssembly();
+
 			AssemblyName assemblyName = assembly.GetName();
 			object[] attributes = assembly.GetCustomAttributes(false);
 

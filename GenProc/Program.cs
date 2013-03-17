@@ -150,38 +150,104 @@ namespace GenProc
 
 	public class Program
 	{
-		private static Properties.Settings Settings;
-
 		public static int Main(string[] args)
 		{
-			Settings = Properties.Settings.Default;
-
-			OptionSet opts = new OptionSet()
+			ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
+			SqlConnection conn = null;
+			try
 			{
-				{ "p|prefix:", "Prefix to use on naming collisions.", (string v) => Settings.CollisionPrefix = v },
-				{ "m|monolithic", "Enable monolithic mode.", v => Settings.Monolithic = v != null },
-				{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => Settings.MiscClass = v }
-			};
+				Configuration config;
+				string connection = Helpers.GetConfig(args);
+				if (String.IsNullOrWhiteSpace(connection))
+					config = new Configuration();
+				else
+					config = section.Get(connection);
 
-			string[] extra;
-			SqlConnection conn;
-			int ret = Helpers.Setup(args, ref Settings, out extra, out conn, opts);
-			if (ret != ReturnValue.Success)
-				return ret;
+				OptionSet opts = new OptionSet()
+				{
+					{ "p|prefix:", "Prefix to use on naming collisions.", (string v) => config.CollisionPrefix = v },
+					{ "m|monolithic", "Enable monolithic mode.", v => config.Monolithic = v != null },
+					{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => config.MiscClass = v }
+				};
 
-			if (extra.Length > 0)
+				string[] extra = Helpers.Setup(args, ref config, out conn, opts);
+
+				if (extra.Length > 0)
+				{
+					config.OutputDirectory = extra.First();
+					config.OutputFile = extra.First();
+				}
+
+				Program prog = new Program(config);
+
+				Stopwatch sw = new Stopwatch();
+				sw.Start();
+
+				prog.LoadProcedures(conn);
+				prog.WriteProcedures();
+
+				sw.Stop();
+				Logger.Info("Total time: {0}", sw.Elapsed);
+			}
+			catch (ReturnException ex)
 			{
-				Settings.OutputDirectory = extra.First();
-				Settings.MonolithicOutput = extra.First();
+				return (int)ex.Code;
+			}
+			finally
+			{
+				if (conn != null && conn.State == ConnectionState.Open)
+					conn.Close();
 			}
 
-			Stopwatch sw = new Stopwatch();
-			sw.Start();
+			return (int)ReturnCode.Success;
+		}
 
-			Branch<Procedure> trunk = new Branch<Procedure>(Settings.MasterNamespace);
+		private Configuration _settings;
+
+		public Branch<Procedure> Procedures;
+
+		public Program(Configuration settings)
+		{
+			_settings = settings;
+		}
+
+		public void WriteProcedures()
+		{
+			string path = _settings.OutputDirectory;
+
+			// Clean out old code
+			if (Directory.Exists(path))
+				Directory.Delete(path, true);
+
+			if (_settings.Monolithic)
+			{
+				StringWriter str = new StringWriter();
+				WriteCodeMonolithic(str, Procedures, true);
+
+				Templates.File f = new Templates.File();
+				f.Session = new Dictionary<string, object>();
+				f.Session["namespace"] = _settings.MasterNamespace;
+				f.Session["class"] = str.ToString();
+				f.Initialize();
+
+				StreamWriter writer = Helpers.OpenWriter(_settings.OutputFile);
+
+				writer.Write(f.TransformText());
+				writer.Close();
+			}
+			else
+				WriteCodeMulti(Procedures, path, "");
+		}
+
+		public void LoadProcedures(SqlConnection conn)
+		{
+			Procedures = new Branch<Procedure>(_settings.MasterNamespace);
 			TimeSpan inserts = new TimeSpan();
 
 			SqlCommand cmd = new SqlCommand("p_ListProcedures", conn) { CommandType = CommandType.StoredProcedure };
+
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
 
 			try
 			{
@@ -195,7 +261,7 @@ namespace GenProc
 						if (proc != Procedure.None)
 						{
 							TimeSpan ts = sw.Elapsed;
-							trunk.Insert(proc.Path, proc);
+							Procedures.Insert(proc.Path, proc);
 							inserts += sw.Elapsed - ts;
 						}
 
@@ -235,57 +301,20 @@ namespace GenProc
 
 				// Add last procedure
 				if (proc != Procedure.None)
-					trunk.Insert(proc.Path, proc);
+					Procedures.Insert(proc.Path, proc);
 			}
 			catch (Exception ex)
 			{
 				Logger.Error("Error parsing data: {0}", ex.Message);
-				return ReturnValue.ParseError;
+				throw new ReturnException(ReturnCode.ParseError);
 			}
-			finally
-			{
-				if (conn.State == ConnectionState.Open)
-					conn.Close();
-			}
-
-			Logger.Info("Done database stuff: {0}", sw.Elapsed);
-			Logger.Debug("Time spent inserting: {0}", inserts);
-
-			string path = Settings.OutputDirectory;
-
-			// Clean out old code
-			if (Directory.Exists(path))
-				Directory.Delete(path, true);
-
-			if (Settings.Monolithic)
-			{
-				StringWriter str = new StringWriter();
-				WriteCodeMonolithic(str, trunk, true);
-
-				Templates.File f = new Templates.File();
-				f.Session = new Dictionary<string, object>();
-				f.Session["namespace"] = Settings.MasterNamespace;
-				f.Session["class"] = str.ToString();
-				f.Initialize();
-
-				StreamWriter writer;
-				ret = Helpers.OpenWriter(Settings.MonolithicOutput, out writer);
-				if (ret != ReturnValue.Success)
-					return ret;
-
-				writer.Write(f.TransformText());
-				writer.Close();
-			}
-			else
-				WriteCodeMulti(trunk, path, "");
 
 			sw.Stop();
-			Logger.Info("Total time: {0}", sw.Elapsed);
-
-			return ReturnValue.Success;
+			Logger.Info("Done database stuff: {0}", sw.Elapsed);
+			Logger.Debug("Time spent inserting: {0}", inserts);
 		}
 
-		private static void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
+		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
 		{
 			node = node.TrimStart('.');
 			Directory.CreateDirectory(path);
@@ -331,7 +360,7 @@ namespace GenProc
 			tw.Close();
 		}
 
-		private static void WriteCodeMonolithic(TextWriter tw, Branch<Procedure> branch, bool first = false)
+		private void WriteCodeMonolithic(TextWriter tw, Branch<Procedure> branch, bool first = false)
 		{
 			StringWriter classes = new StringWriter();
 			foreach (Branch<Procedure> brch in branch.Branches)

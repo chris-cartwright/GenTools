@@ -18,7 +18,7 @@ namespace UnitTests
 		public static readonly string ConnectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState";
 
 		private static readonly Regex splitter = new Regex("^GO", RegexOptions.IgnoreCase | RegexOptions.Multiline);
-		private enum SqlResource { KnownState, Cleanup }
+		private enum SqlResource { KnownState, Cleanup, DatabaseSetup }
 
 		private static void RunSql(SqlResource res, ref SqlConnection conn)
 		{
@@ -53,6 +53,7 @@ namespace UnitTests
 			conn.Open();
 			RunSql(SqlResource.Cleanup, ref conn);
 			RunSql(SqlResource.KnownState, ref conn);
+			RunSql(SqlResource.DatabaseSetup, ref conn);
 			conn.Close();
 		}
 	}

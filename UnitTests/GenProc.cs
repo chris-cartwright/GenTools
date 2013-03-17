@@ -194,28 +194,56 @@ namespace UnitTests
 				Assert.IsEmpty(p.Parameters);
 				Assert.AreEqual("p_Test_Name", p.Original);
 				Assert.AreEqual("Name", p.Name);
-				Assert.AreEqual("Name", p.NameClean);
 				Assert.AreEqual(new string[] { "Test" }, p.Path);
 
 				p = new global::GenProc.Procedure("Test_Name");
 				Assert.IsEmpty(p.Parameters);
 				Assert.AreEqual("Test_Name", p.Original);
 				Assert.AreEqual("Name", p.Name);
-				Assert.AreEqual("Name", p.NameClean);
 				Assert.AreEqual(new string[] { "Test" }, p.Path);
 
 				p = new global::GenProc.Procedure("TestName");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("TestName", p.Original);
+				Assert.AreEqual("TestName", p.Name);
+				Assert.AreEqual(new string[] { "Misc" }, p.Path);
 
 				p = new global::GenProc.Procedure("Test_Second");
-
-				p = new global::GenProc.Procedure("Test_Third");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("Test_Second", p.Original);
+				Assert.AreEqual("Second", p.Name);
+				Assert.AreEqual(new string[] { "Test" }, p.Path);
 
 				p = new global::GenProc.Procedure("Second_new");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("Second_new", p.Original);
+				Assert.AreEqual("new", p.Name);
+				Assert.AreEqual(new string[] { "Second" }, p.Path);
 
 				p = new global::GenProc.Procedure("Third_while");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("Third_while", p.Original);
+				Assert.AreEqual("while", p.Name);
+				Assert.AreEqual(new string[] { "Third" }, p.Path);
 
 				p = new global::GenProc.Procedure("p_Three_Deep_Procedure");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("p_Three_Deep_Procedure", p.Original);
+				Assert.AreEqual("Procedure", p.Name);
+				Assert.AreEqual(new string[] { "Three", "Deep" }, p.Path);
+
+				p = new global::GenProc.Procedure("s_Three");
+				Assert.IsEmpty(p.Parameters);
+				Assert.AreEqual("s_Three", p.Original);
+				Assert.AreEqual("Three", p.Name);
+				Assert.AreEqual(new string[] { "Misc" }, p.Path);
 			}
+		}
+
+		[Test]
+		public void Main()
+		{
+			//
 		}
     }
 }

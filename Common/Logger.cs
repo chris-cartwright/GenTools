@@ -8,7 +8,7 @@ namespace Common
 {
 	public static class Logger
 	{
-		public enum Level { Error, Warn, Info, Debug };
+		public enum Level : ushort { Error, Warn, Info, Debug };
 
 		public static Level Current = Level.Error;
 

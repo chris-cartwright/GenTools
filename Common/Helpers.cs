@@ -15,27 +15,6 @@ namespace Common
 {
 	public static class Helpers
 	{
-		internal class Settings
-		{
-			public ushort LoggingLevel { get; set; }
-			public string MasterNamespace { get; set; }
-			public string ConnectionString { get; set; }
-
-			public void CopyTo<T>(ref T obj)
-			{
-				Type type = typeof(T);
-				foreach (PropertyInfo pi in typeof(Settings).GetProperties())
-					type.GetProperty(pi.Name).SetValue(obj, pi.GetValue(this, null), null);
-			}
-
-			public void CopyFrom<T>(ref T obj)
-			{
-				Type type = typeof(T);
-				foreach (PropertyInfo pi in typeof(Settings).GetProperties())
-					pi.SetValue(this, type.GetProperty(pi.Name).GetValue(obj, null), null);
-			}
-		}
-
 		public static readonly string[] Keywords = new string[]
 		{
 			 "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default",
@@ -120,24 +99,53 @@ namespace Common
 			return ret.CleanKeyword();
 		}
 
-		public static int Setup<T>(string[] args, ref T appSettings, out string[] extra, out SqlConnection conn, OptionSet opts = null)
+		public static string GetConfig(string[] args)
+		{
+			bool help = false;
+			string connection = null;
+			OptionSet options = new OptionSet()
+			{
+				{ "k|name:", "Name of connection string to use.", (string v) => connection = v },
+				{ "h|help", "Show this message.", v => help = v != null }
+			};
+
+			try
+			{
+				options.Parse(args);
+			}
+			catch (OptionException ex)
+			{
+				Console.WriteLine("{0}: {1}", AssemblyName, ex.Message);
+				Console.WriteLine("Try `{0} -n help --help` for more information.", AssemblyName);
+				throw new ReturnException(ReturnCode.InvalidOptions);
+			}
+
+			if (help)
+				PrintShortHelp();
+
+			return connection;
+		}
+
+		public static string[] Setup<T>(string[] args, ref T appConfig, out SqlConnection conn, OptionSet opts = null)
 		{
 			Console.WriteLine("{0} version {1}", AssemblyName, VersionString);
-
-			extra = new string[0];
+			
 			conn = null;
 
-			ushort verbosity = 0;
-			Settings settings = new Settings();
-			settings.CopyFrom(ref appSettings);
+			// Convert appConfig to internal class because out/ref parameters cannot be used in lambdas
+			ConfigurationElementBase config = new ConfigurationElementBase();
+			config.CopyFrom(ref appConfig);
 
+			short verbosity = 0;
 			bool help = false;
 			OptionSet options = new OptionSet()
 			{
 				{ "v", "Increase verbosity level.", v => verbosity++ },
-				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => settings.LoggingLevel = v },
-				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => settings.MasterNamespace = v },
-				{ "c|connection:", "Name of connection string to use.", (string v) => settings.ConnectionString = v },
+				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => config.LoggingLevel = (Logger.Level)v },
+				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => config.MasterNamespace = v },
+				{ "c|connection:", "Connection string for database.", (string v) => config.ConnectionString = v },
+				// Swallow name so it doesn't come back as an extra
+				{ "k|name:", "Name of connection string to use.", (string v) => config.Name = v },
 				{ "h|help", "Show this message.", v => help = v != null }
 			};
 
@@ -147,6 +155,13 @@ namespace Common
 					options.Add(opt);
 			}
 
+			if (help)
+			{
+				PrintHelp(options);
+				return null;
+			}
+
+			string[] extra;
 			try
 			{
 				extra = options.Parse(args).ToArray();
@@ -154,35 +169,35 @@ namespace Common
 			catch (OptionException ex)
 			{
 				Console.WriteLine("{0}: {1}", AssemblyName, ex.Message);
-				Console.WriteLine("Try `{0} --help` for more information.", AssemblyName);
-				return ReturnValue.InvalidOptions;
+				Console.WriteLine("Try `{0} -n help --help` for more information.", AssemblyName);
+				throw new ReturnException(ReturnCode.InvalidOptions);
 			}
 
 			if (help)
-			{
-				PrintHelp(opts);
-				return ReturnValue.Success;
-			}
+				PrintHelp(options);
 
-			if (verbosity != 0)
-				settings.LoggingLevel = verbosity;
+			if (verbosity != -1)
+				config.LoggingLevel = (Logger.Level)(++verbosity);
 
-			Logger.Current = (Logger.Level)settings.LoggingLevel;
+			Logger.Current = (Logger.Level)config.LoggingLevel;
 			Logger.Debug("Logging level: {0}", Logger.Current);
 
-			string connectionName = AssemblyName + ".Properties.Settings." + settings.ConnectionString;
-			if (ConfigurationManager.ConnectionStrings[connectionName] == null)
+			string connection = null;
+			if (config.Name != null)
 			{
-				connectionName = settings.ConnectionString;
-				if (ConfigurationManager.ConnectionStrings[connectionName] == null)
+				if (ConfigurationManager.ConnectionStrings[config.Name] == null)
 				{
-					Logger.Error("Unknown connection: {0}", connectionName);
-					return ReturnValue.UnknownConnection;
+					Logger.Error("Unknown connection: {0}", config.Name);
+					throw new ReturnException(ReturnCode.UnknownConnection);
 				}
-			}
 
-			Logger.Info("Using connection: {0}", ConfigurationManager.ConnectionStrings[connectionName]);
-			conn = new SqlConnection(ConfigurationManager.ConnectionStrings[connectionName].ToString());
+				connection = ConfigurationManager.ConnectionStrings[config.Name].ToString();
+			}
+			else
+				connection = config.ConnectionString;
+
+			Logger.Info("Using connection: {0}", connection);
+			conn = new SqlConnection(connection);
 
 			try
 			{
@@ -191,11 +206,12 @@ namespace Common
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine("Could not connect: {0}", ex.Message);
-				return ReturnValue.ConnectFailed;
+				throw new ReturnException(ReturnCode.ConnectFailed);
 			}
 
-			settings.CopyTo(ref appSettings);
-			return ReturnValue.Success;
+			config.CopyTo(ref appConfig);
+
+			return extra;
 		}
 
 		public static void PrintHelp(OptionSet opts)
@@ -206,11 +222,21 @@ namespace Common
 			Console.WriteLine();
 			Console.WriteLine("Options:");
 			opts.WriteOptionDescriptions(Console.Out);
+			Environment.Exit((int)ReturnCode.Success);
 		}
 
-		public static int OpenWriter(string fileName, out StreamWriter file)
+		public static void PrintShortHelp()
 		{
-			file = null;
+			Console.WriteLine("Usage: {0} [options] [output file/folder]", AssemblyName);
+			Console.WriteLine(Description);
+			Console.WriteLine("If no output file/folder is specified, the respective values from app.config are used.");
+			Console.WriteLine("For full help listing, provide any value for --name");
+			Environment.Exit((int)ReturnCode.Success);
+		}
+
+		public static StreamWriter OpenWriter(string fileName)
+		{
+			StreamWriter writer;
 
 			try
 			{
@@ -221,20 +247,20 @@ namespace Common
 						File.SetAttributes(fileName, attr ^ FileAttributes.ReadOnly);
 				}
 
-				file = new StreamWriter(File.Open(fileName, FileMode.Create));
+				writer = new StreamWriter(File.Open(fileName, FileMode.Create));
 			}
 			catch (UnauthorizedAccessException ex)
 			{
 				Logger.Error("Could not access output file: {0}", ex.Message);
-				return ReturnValue.FileAccess;
+				throw new ReturnException(ReturnCode.FileAccess);
 			}
 			catch (Exception ex)
 			{
 				Logger.Error("Unknown error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return ReturnValue.FileAccess;
+				throw new ReturnException(ReturnCode.FileAccess);
 			}
 
-			return ReturnValue.Success;
+			return writer;
 		}
 	}
 }

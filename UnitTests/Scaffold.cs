@@ -17,7 +17,7 @@ namespace UnitTests
 	{
 		public static readonly string ConnectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState";
 
-		private static readonly Regex splitter = new Regex("^GO", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+		private static readonly Regex splitter = new Regex("^go", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 		private enum SqlResource { KnownState, Cleanup, DatabaseSetup }
 
 		private static void RunSql(SqlResource res, ref SqlConnection conn)
@@ -32,7 +32,7 @@ namespace UnitTests
 
 			SqlTransaction trans = conn.BeginTransaction();
 			SqlCommand cmd = new SqlCommand();
-			foreach (string stmt in splitter.Split(sql))
+			foreach (string stmt in splitter.Split(sql).Where(p => !String.IsNullOrWhiteSpace(p)))
 			{
 				cmd = new SqlCommand(stmt, conn, trans);
 				if(cmd.ExecuteNonQuery() == 0)

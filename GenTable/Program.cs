@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -82,25 +83,64 @@ namespace GenTable
 
 	public class Program
 	{
-		private static Properties.Settings Settings;
-
 		private static int Main(string[] args)
 		{
-			Settings = Properties.Settings.Default;
+			SqlConnection conn = null;
 
-			string[] extra;
-			SqlConnection conn;
-			int ret = Helpers.Setup(args, ref Settings, out extra, out conn);
+			try
+			{
+				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
+				Configuration config;
+				string name = Helpers.GetConfig(args);
+				if (String.IsNullOrWhiteSpace(name))
+					config = new Configuration();
+				else
+					config = section.Get(name);
 
-			if (ret != ReturnValue.Success)
-				return ret;
+				string[] extra = Helpers.Setup(args, ref config, out conn);
 
-			if (extra.Length > 0)
-				Settings.OutputFile = extra.First();
+				if (extra.Length > 0)
+					config.OutputFile = extra.First();
 
+				Program prog = new Program(config);
+
+				Stopwatch sw = new Stopwatch();
+				sw.Start();
+
+				prog.LoadTables(conn);
+				prog.Write();
+
+				sw.Stop();
+				Logger.Info("Total time: {0}", sw.Elapsed);
+			}
+			catch (ReturnException ex)
+			{
+				return (int)ex.Code;
+			}
+			finally
+			{
+				if (conn != null && conn.State == ConnectionState.Open)
+					conn.Close();
+			}
+
+			return (int)ReturnCode.Success;
+		}
+
+		private Configuration _settings;
+
+		public List<Table> Tables;
+
+		public Program(Configuration settings)
+		{
+			_settings = settings;
+			Tables = new List<Table>();
+		}
+
+		public void LoadTables(SqlConnection conn)
+		{
 			SqlCommand cmd = new SqlCommand("p_ListTables", conn) { CommandType = CommandType.StoredProcedure };
 
-			List<Table> tables = new List<Table>();
+			Tables = new List<Table>();
 			try
 			{
 				SqlDataReader reader = cmd.ExecuteReader();
@@ -108,10 +148,10 @@ namespace GenTable
 				while (reader.Read())
 				{
 					string tableName = reader["table"].ToString();
-					if (tableName != table.Name && tableName + Settings.CollisionPostfix != table.Name)
+					if (tableName != table.Name && tableName + _settings.CollisionPostfix != table.Name)
 					{
 						if (table != Table.None)
-							tables.Add(table);
+							Tables.Add(table);
 
 						table = new Table(tableName);
 					}
@@ -119,23 +159,26 @@ namespace GenTable
 					Column col = new Column(reader["column"].ToString(), reader["type"].ToString(), (bool)reader["nullable"], (bool)reader["identity"]);
 
 					if (col.Name == table.Name)
-						table.Name = table.Name + Settings.CollisionPostfix;
+						table.Name = table.Name + _settings.CollisionPostfix;
 
 					table.Columns.Add(col);
 				}
 
-				tables.Add(table); // add the last table from the result set.
+				Tables.Add(table); // add the last table from the result set.
 			}
 			catch (Exception ex)
 			{
 				Logger.Error("Parse error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return ReturnValue.Unknown;
+				throw new ReturnException(ReturnCode.Unknown);
 			}
 
 			Logger.Info("Done database stuff");
+		}
 
+		public void Write()
+		{
 			StringBuilder tbls = new StringBuilder();
-			foreach (Table t in tables)
+			foreach (Table t in Tables)
 			{
 				Templates.Class c = new Templates.Class();
 				c.Session = new Dictionary<string, object>();
@@ -147,18 +190,12 @@ namespace GenTable
 			Templates.File f = new Templates.File();
 			f.Session = new Dictionary<string, object>();
 			f.Session["classes"] = tbls.ToString();
-			f.Session["namespace"] = Settings.MasterNamespace;
+			f.Session["namespace"] = _settings.MasterNamespace;
 			f.Initialize();
 
-			StreamWriter writer;
-			ret = Helpers.OpenWriter(Settings.OutputFile, out writer);
-			if (ret != ReturnValue.Success)
-				return ret;
-
+			StreamWriter writer = Helpers.OpenWriter(_settings.OutputFile);
 			writer.Write(f.TransformText());
 			writer.Close();
-
-			return ReturnValue.Success;
 		}
 	}
 }

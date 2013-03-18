@@ -31,7 +31,7 @@
 
 			string columns = cols.ToString().TrimEnd(',');
 		#>
-		public static T LoadFull(<#=ident.Type.Name #> id)
+		protected static T LoadFull(<#=ident.Type.Name #> id)
 		{
 			SqlConnection conn = new SqlConnection(ConnectionString);
 			SqlCommand cmd = new SqlCommand();

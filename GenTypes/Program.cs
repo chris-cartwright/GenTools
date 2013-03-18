@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -51,7 +53,7 @@ namespace GenTypes
 		{
 			get
 			{
-				if(_identity == null)
+				if (_identity == null)
 					_identity = Columns.Where(c => c.IsIdentity).First();
 
 				return _identity;
@@ -112,27 +114,66 @@ namespace GenTypes
 
 	public class Program
 	{
-		private static Properties.Settings Settings;
-
 		private static int Main(string[] args)
 		{
-			Settings = Properties.Settings.Default;
+			SqlConnection conn = null;
 
-			string[] extra;
-			SqlConnection conn;
-			int ret = Helpers.Setup(args, ref Settings, out extra, out conn);
-
-			if (ret != ReturnValue.Success)
-				return ret;
-
-			if (extra.Length > 0)
-				Settings.OutputFile = extra.First();
-
-			SqlCommand cmd = new SqlCommand("p_ListTypeTables", conn) { CommandType = CommandType.StoredProcedure };
-
-			List<Mapping> mappings = new List<Mapping>();
 			try
 			{
+				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
+				Configuration config;
+				string name = Helpers.GetConfig(args);
+				if (String.IsNullOrWhiteSpace(name))
+					config = new Configuration();
+				else
+					config = section.Get(name);
+
+				string[] extra = Helpers.Setup(args, ref config, out conn);
+
+				if (extra.Length > 0)
+					config.OutputFile = extra.First();
+
+				Program prog = new Program(config);
+
+				Stopwatch sw = new Stopwatch();
+				sw.Start();
+
+				prog.LoadTables(conn);
+				prog.Write();
+
+				sw.Stop();
+				Logger.Info("Total time: {0}", sw.Elapsed);
+			}
+			catch (ReturnException ex)
+			{
+				return (int)ex.Code;
+			}
+			finally
+			{
+				if (conn != null && conn.State == ConnectionState.Open)
+					conn.Close();
+			}
+
+			return (int)ReturnCode.Success;
+		}
+
+		private Configuration _settings;
+
+		public List<Mapping> Mappings;
+
+		public Program(Configuration settings)
+		{
+			_settings = settings;
+			Mappings = new List<Mapping>();
+		}
+
+		public void LoadTables(SqlConnection conn)
+		{
+			SqlCommand cmd = new SqlCommand("p_ListTypeTables", conn) { CommandType = CommandType.StoredProcedure };
+
+			try
+			{
+				Mappings = new List<Mapping>();
 				SqlDataReader reader = cmd.ExecuteReader();
 				Table table = Table.None;
 				List<Table> tables = new List<Table>();
@@ -195,7 +236,7 @@ namespace GenTypes
 						Logger.Info("Table was empty: {0}", t.Name);
 
 					if (!duplicate && map.Count > 0)
-						mappings.Add(map);
+						Mappings.Add(map);
 
 					reader.Close();
 				}
@@ -203,38 +244,31 @@ namespace GenTypes
 			catch (Exception ex)
 			{
 				Logger.Error("Parse error: ({0}) {1}", ex.GetType().Name, ex.Message);
-				return ReturnValue.Unknown;
+				throw new ReturnException(ReturnCode.ParseError);
 			}
-			finally
-			{
-				if (conn.State == ConnectionState.Open)
-					conn.Close();
-			}
+		}
 
+		public void Write()
+		{
 			StringBuilder classes = new StringBuilder();
-			foreach(Mapping map in mappings)
+			foreach (Mapping map in Mappings)
 			{
 				Templates.ClassBase cls = null;
-				Type type = Type.GetType("GenTypes.Templates." + Settings.Language + ".Class");
+				Type type = Type.GetType("GenTypes.Templates." + _settings.Language + ".Class");
 				cls = (Templates.ClassBase)Activator.CreateInstance(type);
 				cls.Assign(map);
 				classes.Append(cls.TransformText());
 			}
 
 			Templates.FileBase file = null;
-			Type fileType = Type.GetType("GenTypes.Templates." + Settings.Language + ".File");
+			Type fileType = Type.GetType("GenTypes.Templates." + _settings.Language + ".File");
 			file = (Templates.FileBase)Activator.CreateInstance(fileType);
-			file.Assign(classes.ToString(), Settings.MasterNamespace);
+			file.Assign(classes.ToString(), _settings.MasterNamespace);
 
-			StreamWriter writer;
-			ret = Helpers.OpenWriter(Settings.OutputFile, out writer);
-			if (ret != ReturnValue.Success)
-				return ret;
+			StreamWriter writer = Helpers.OpenWriter(_settings.OutputFile);
 
 			writer.Write(file.TransformText());
 			writer.Close();
-
-			return ReturnValue.Success;
 		}
 	}
 }

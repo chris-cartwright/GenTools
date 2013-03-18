@@ -37,6 +37,7 @@
       <HintPath>C:\Program Files (x86)\NUnit 2.6.2\bin\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -75,7 +76,7 @@
     <EmbeddedResource Include="SQL\KnownState.sql" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="SQL\DatabaseSetup.sql" />
+    <EmbeddedResource Include="SQL\DatabaseSetup.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

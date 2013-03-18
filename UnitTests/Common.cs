@@ -11,13 +11,6 @@ namespace UnitTests
 {
 	public class Common
 	{
-		private class Settings
-		{
-			public ushort LoggingLevel { get; set; }
-			public string MasterNamespace { get; set; }
-			public string ConnectionString { get; set; }
-		}
-
 		[Test]
 		public void CleanName()
 		{
@@ -34,17 +27,22 @@ namespace UnitTests
 		[Test]
 		public void SettingsTest()
 		{
-			Settings copyFrom = new Settings() { LoggingLevel = 10, MasterNamespace = "Test", ConnectionString = "Connect" };
-			Helpers.Settings test = new Helpers.Settings();
+			ConfigurationElementBase copyFrom = new ConfigurationElementBase()
+			{
+				LoggingLevel = Logger.Level.Error,
+				MasterNamespace = "Test",
+				ConnectionString = "Connect"
+			};
+			ConfigurationElementBase test = new ConfigurationElementBase();
 
 			test.CopyFrom(ref copyFrom);
-			Assert.AreEqual(10, test.LoggingLevel);
+			Assert.AreEqual(Logger.Level.Error, test.LoggingLevel);
 			Assert.AreEqual("Test", test.MasterNamespace);
 			Assert.AreEqual("Connect", test.ConnectionString);
 
-			Settings copyTo = new Settings();
+			ConfigurationElementBase copyTo = new ConfigurationElementBase();
 			test.CopyTo(ref copyTo);
-			Assert.AreEqual(10, copyTo.LoggingLevel);
+			Assert.AreEqual(Logger.Level.Error, copyTo.LoggingLevel);
 			Assert.AreEqual("Test", copyTo.MasterNamespace);
 			Assert.AreEqual("Connect", copyTo.ConnectionString);
 		}

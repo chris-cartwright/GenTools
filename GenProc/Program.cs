@@ -104,7 +104,7 @@ namespace GenProc
 		static Procedure()
 		{
 			// Name must be at least two characters
-			None = new Procedure("THIS IS NOT A PROCEDURE");
+			None = new Procedure();
 		}
 
 		private string _name;
@@ -119,32 +119,15 @@ namespace GenProc
 		public string Original;
 		public List<Parameter> Parameters;
 
-		private Procedure()
+		private Procedure() { }
+
+		public Procedure(string full, string name, string[] path)
 		{
-			Path = new string[0];
 			Parameters = new List<Parameter>();
-		}
 
-		public Procedure(string full)
-			: this()
-		{
 			Original = full;
-
-			string prefix = full.Substring(0, 2);
-			if (prefix == "p_" || prefix == "s_")
-				full = full.Substring(2);
-
-			IEnumerable<string> parts = full.Split('_').Where(p => p.Length > 0);
-			if (parts.Count() == 1)
-			{
-				Logger.Warn("Procedure missing namespaces: {0}", full);
-				Name = full;
-				Path = new string[] { Properties.Settings.Default.MiscClass };
-				return;
-			}
-
-			Path = parts.Take(parts.Count() - 1).ToArray();
-			Name = parts.Last();
+			Name = name;
+			Path = path;
 		}
 	}
 
@@ -152,16 +135,17 @@ namespace GenProc
 	{
 		public static int Main(string[] args)
 		{
-			ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
 			SqlConnection conn = null;
+
 			try
 			{
+				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
 				Configuration config;
-				string connection = Helpers.GetConfig(args);
-				if (String.IsNullOrWhiteSpace(connection))
+				string name = Helpers.GetConfig(args);
+				if (String.IsNullOrWhiteSpace(name))
 					config = new Configuration();
 				else
-					config = section.Get(connection);
+					config = section.Get(name);
 
 				OptionSet opts = new OptionSet()
 				{
@@ -184,7 +168,7 @@ namespace GenProc
 				sw.Start();
 
 				prog.LoadProcedures(conn);
-				prog.WriteProcedures();
+				prog.Write();
 
 				sw.Stop();
 				Logger.Info("Total time: {0}", sw.Elapsed);
@@ -211,7 +195,23 @@ namespace GenProc
 			_settings = settings;
 		}
 
-		public void WriteProcedures()
+		public Procedure Parse(string full)
+		{
+			string prefix = full.Substring(0, 2);
+			if (prefix == "p_" || prefix == "s_")
+				full = full.Substring(2);
+
+			IEnumerable<string> parts = full.Split('_').Where(p => p.Length > 0);
+			if (parts.Count() == 1)
+			{
+				Logger.Warn("Procedure missing namespaces: {0}", full);
+				return new Procedure(full, full, new string[] { _settings.MiscClass });
+			}
+
+			return new Procedure(full, parts.Last(), parts.Take(parts.Count() - 1).ToArray());
+		}
+
+		public void Write()
 		{
 			string path = _settings.OutputDirectory;
 
@@ -265,7 +265,7 @@ namespace GenProc
 							inserts += sw.Elapsed - ts;
 						}
 
-						proc = new Procedure(procName);
+						proc = Parse(procName);
 					}
 
 					if (reader["parameter"] == DBNull.Value)
@@ -327,7 +327,7 @@ namespace GenProc
 
 			string className = branch.Name;
 			if (branch.Branches.Count > 0)
-				className = Properties.Settings.Default.CollisionPrefix + className;
+				className = _settings.CollisionPrefix + className;
 
 			string file = Path.Combine(path, className) + ".cs";
 			StreamWriter tw = new StreamWriter(File.Create(file));
@@ -366,7 +366,7 @@ namespace GenProc
 			foreach (Branch<Procedure> brch in branch.Branches)
 			{
 				if (branch.Leaves.Count(p => p.Name == brch.Name) > 0)
-					brch.Name = Properties.Settings.Default.CollisionPrefix + brch.Name;
+					brch.Name = _settings.CollisionPrefix + brch.Name;
 
 				WriteCodeMonolithic(classes, brch);
 			}

@@ -7,31 +7,38 @@ CREATE procedure [dbo].[p_Completely_Valid]
 , @Second tinyint = 0
 , @Third nvarchar(10)
 , @Nullable int = null
-, @Default nvarchar(50) = null
+, @Default nvarchar(50) = 'test default'
+, @Output int = null output
+, @DefString nvarchar(10) = ''
 as
 
 select 1
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 create procedure [dbo].[p_MissingUnderscore]
   @Column int
 as
 
 select 1
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
 
+
 create procedure [dbo].[p_No_Params]
 as
 
 select 1
+
 GO
 SET ANSI_NULLS ON
 GO

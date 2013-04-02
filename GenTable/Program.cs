@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Common;
-using Mono.Options;
 
 namespace GenTable
 {
@@ -34,7 +33,7 @@ namespace GenTable
 		{
 			get
 			{
-				return Columns.Where(c => c.IsIdentity).FirstOrDefault();
+				return Columns.FirstOrDefault(c => c.IsIdentity);
 			}
 		}
 
@@ -90,12 +89,8 @@ namespace GenTable
 			try
 			{
 				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
-				Configuration config;
 				string name = Helpers.GetConfig(args);
-				if (String.IsNullOrWhiteSpace(name))
-					config = new Configuration();
-				else
-					config = section.Get(name);
+				Configuration config = String.IsNullOrWhiteSpace(name) ? new Configuration() : section.Get(name);
 
 				string[] extra = Helpers.Setup(args, ref config, out conn);
 
@@ -180,15 +175,13 @@ namespace GenTable
 			StringBuilder tbls = new StringBuilder();
 			foreach (Table t in Tables)
 			{
-				Templates.Class c = new Templates.Class();
-				c.Session = new Dictionary<string, object>();
+				Templates.Class c = new Templates.Class() { Session = new Dictionary<string, object>() };
 				c.Session["table"] = t;
 				c.Initialize();
 				tbls.Append(c.TransformText());
 			}
 
-			Templates.File f = new Templates.File();
-			f.Session = new Dictionary<string, object>();
+			Templates.File f = new Templates.File() { Session = new Dictionary<string, object>() };
 			f.Session["classes"] = tbls.ToString();
 			f.Session["namespace"] = _settings.MasterNamespace;
 			f.Initialize();

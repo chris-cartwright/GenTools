@@ -1,34 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.SqlClient;
+using GenProc;
 using NUnit.Framework;
 
 namespace UnitTests
 {
 	[TestFixture]
-    public class GenProc
-    {
+	public class GenProc
+	{
 		[TestFixture]
 		public class Branch
 		{
-			private global::GenProc.Branch<int> tree;
+			private Branch<int> _tree;
 
 			[SetUp]
 			public void SetUp()
 			{
-				tree = new global::GenProc.Branch<int>("Trunk");
+				_tree = new Branch<int>("Trunk");
 			}
 
 			[Test]
 			public void Constructor()
 			{
-				Assert.AreEqual(tree.Name, "Trunk");
-				Assert.IsNotNull(tree.Branches);
-				Assert.IsNotNull(tree.Leaves);
-				Assert.IsEmpty(tree.Branches);
-				Assert.IsEmpty(tree.Leaves);
+				Assert.AreEqual(_tree.Name, "Trunk");
+				Assert.IsNotNull(_tree.Branches);
+				Assert.IsNotNull(_tree.Leaves);
+				Assert.IsEmpty(_tree.Branches);
+				Assert.IsEmpty(_tree.Leaves);
 			}
 
 			[Test]
@@ -36,207 +34,269 @@ namespace UnitTests
 			{
 				int i = 0;
 
-				tree.Insert(new string[] { }, i);
-				Assert.IsEmpty(tree.Branches);
-				Assert.AreEqual(1, tree.Leaves.Count);
-				Assert.AreEqual(i, tree.Leaves[0]);
+				_tree.Insert(new string[] { }, i);
+				Assert.IsEmpty(_tree.Branches);
+				Assert.AreEqual(1, _tree.Leaves.Count);
+				Assert.AreEqual(i, _tree.Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 1" }, i);
-				Assert.AreEqual(1, tree.Branches.Count);
-				Assert.IsEmpty(tree.Branches[0].Branches);
-				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
-				Assert.AreEqual(1, tree.Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 1" }, i);
+				Assert.AreEqual(1, _tree.Branches.Count);
+				Assert.IsEmpty(_tree.Branches[0].Branches);
+				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
+				Assert.AreEqual(1, _tree.Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[0].Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 1", "Sub 1" }, i);
-				Assert.AreEqual(1, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
-				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
-				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
-				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 1", "Sub 1" }, i);
+				Assert.AreEqual(1, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", _tree.Branches[0].Branches[0].Name);
+				Assert.AreEqual(1, _tree.Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[0].Branches[0].Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 2", "Sub 1" }, i);
-				Assert.AreEqual(2, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[1].Branches.Count);
-				Assert.AreEqual("Sub 1", tree.Branches[1].Branches[0].Name);
-				Assert.AreEqual("Branch 2", tree.Branches[1].Name);
-				Assert.AreEqual(0, tree.Branches[1].Leaves.Count);
-				Assert.AreEqual(1, tree.Branches[1].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[1].Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 2", "Sub 1" }, i);
+				Assert.AreEqual(2, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[1].Branches.Count);
+				Assert.AreEqual("Sub 1", _tree.Branches[1].Branches[0].Name);
+				Assert.AreEqual("Branch 2", _tree.Branches[1].Name);
+				Assert.AreEqual(0, _tree.Branches[1].Leaves.Count);
+				Assert.AreEqual(1, _tree.Branches[1].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[1].Branches[0].Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 2", "Sub 2" }, i);
-				Assert.AreEqual(2, tree.Branches.Count);
-				Assert.AreEqual(2, tree.Branches[1].Branches.Count);
-				Assert.AreEqual("Sub 2", tree.Branches[1].Branches[1].Name);
-				Assert.AreEqual("Branch 2", tree.Branches[1].Name);
-				Assert.AreEqual(1, tree.Branches[1].Branches[1].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[1].Branches[1].Leaves[0]);
+				_tree.Insert(new[] { "Branch 2", "Sub 2" }, i);
+				Assert.AreEqual(2, _tree.Branches.Count);
+				Assert.AreEqual(2, _tree.Branches[1].Branches.Count);
+				Assert.AreEqual("Sub 2", _tree.Branches[1].Branches[1].Name);
+				Assert.AreEqual("Branch 2", _tree.Branches[1].Name);
+				Assert.AreEqual(1, _tree.Branches[1].Branches[1].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[1].Branches[1].Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 3", "Sub 1", "Sub sub 1" }, i);
-				Assert.AreEqual(3, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[2].Branches.Count);
-				Assert.AreEqual(1, tree.Branches[2].Branches[0].Branches.Count);
-				Assert.AreEqual("Branch 3", tree.Branches[2].Name);
-				Assert.AreEqual("Sub 1", tree.Branches[2].Branches[0].Name);
-				Assert.AreEqual("Sub sub 1", tree.Branches[2].Branches[0].Branches[0].Name);
-				Assert.IsEmpty(tree.Branches[2].Leaves);
-				Assert.IsEmpty(tree.Branches[2].Branches[0].Leaves);
-				Assert.AreEqual(1, tree.Branches[2].Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[2].Branches[0].Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 3", "Sub 1", "Sub sub 1" }, i);
+				Assert.AreEqual(3, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[2].Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[2].Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 3", _tree.Branches[2].Name);
+				Assert.AreEqual("Sub 1", _tree.Branches[2].Branches[0].Name);
+				Assert.AreEqual("Sub sub 1", _tree.Branches[2].Branches[0].Branches[0].Name);
+				Assert.IsEmpty(_tree.Branches[2].Leaves);
+				Assert.IsEmpty(_tree.Branches[2].Branches[0].Leaves);
+				Assert.AreEqual(1, _tree.Branches[2].Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[2].Branches[0].Branches[0].Leaves[0]);
 
 				i++;
 
-				tree.Insert(new string[] { "Branch 3", "Sub 1", "Sub sub 1" }, i);
-				Assert.AreEqual(3, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[2].Branches.Count);
-				Assert.AreEqual(1, tree.Branches[2].Branches[0].Branches.Count);
-				Assert.AreEqual("Branch 3", tree.Branches[2].Name);
-				Assert.AreEqual("Sub 1", tree.Branches[2].Branches[0].Name);
-				Assert.AreEqual("Sub sub 1", tree.Branches[2].Branches[0].Branches[0].Name);
-				Assert.IsEmpty(tree.Branches[2].Leaves);
-				Assert.IsEmpty(tree.Branches[2].Branches[0].Leaves);
-				Assert.AreEqual(2, tree.Branches[2].Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[2].Branches[0].Branches[0].Leaves[1]);
+				_tree.Insert(new[] { "Branch 3", "Sub 1", "Sub sub 1" }, i);
+				Assert.AreEqual(3, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[2].Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[2].Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 3", _tree.Branches[2].Name);
+				Assert.AreEqual("Sub 1", _tree.Branches[2].Branches[0].Name);
+				Assert.AreEqual("Sub sub 1", _tree.Branches[2].Branches[0].Branches[0].Name);
+				Assert.IsEmpty(_tree.Branches[2].Leaves);
+				Assert.IsEmpty(_tree.Branches[2].Branches[0].Leaves);
+				Assert.AreEqual(2, _tree.Branches[2].Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[2].Branches[0].Branches[0].Leaves[1]);
 			}
 
 			[Test]
-			[ExpectedException(typeof(ArgumentException), ExpectedMessage="Cannot have duplicate leaves.")]
+			[ExpectedException(typeof(ArgumentException), ExpectedMessage = "Cannot have duplicate leaves.")]
 			public void InsertDuplicate()
 			{
 				int i = 0;
 
-				tree.Insert(new string[] { "Branch 1", "Sub 1" }, i);
-				Assert.AreEqual(1, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
-				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
-				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
-				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 1", "Sub 1" }, i);
+				Assert.AreEqual(1, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", _tree.Branches[0].Branches[0].Name);
+				Assert.AreEqual(1, _tree.Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[0].Branches[0].Leaves[0]);
 
-				tree.Insert(new string[] { "Branch 1", "Sub 1" }, i);
-				Assert.AreEqual(1, tree.Branches.Count);
-				Assert.AreEqual(1, tree.Branches[0].Branches.Count);
-				Assert.AreEqual("Branch 1", tree.Branches[0].Name);
-				Assert.AreEqual("Sub 1", tree.Branches[0].Branches[0].Name);
-				Assert.AreEqual(1, tree.Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, tree.Branches[0].Branches[0].Leaves[0]);
+				_tree.Insert(new[] { "Branch 1", "Sub 1" }, i);
+				Assert.AreEqual(1, _tree.Branches.Count);
+				Assert.AreEqual(1, _tree.Branches[0].Branches.Count);
+				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
+				Assert.AreEqual("Sub 1", _tree.Branches[0].Branches[0].Name);
+				Assert.AreEqual(1, _tree.Branches[0].Branches[0].Leaves.Count);
+				Assert.AreEqual(i, _tree.Branches[0].Branches[0].Leaves[0]);
 			}
 		}
 
 		[TestFixture]
 		public class Parameter
 		{
-			private global::GenProc.Parameter p;
+			private global::GenProc.Parameter _p;
 
 			[Test]
 			public void NotFound()
 			{
-				p = new global::GenProc.Parameter("Test", "doesn't exist", true, null);
-				Assert.AreEqual(typeof(object), p.Type);
+				_p = new global::GenProc.Parameter("Test", "doesn't exist", true, null);
+				Assert.AreEqual(typeof(object), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 2", "nvarchar(40)", true, null);
-				Assert.AreEqual(typeof(object), p.Type);
+				_p = new global::GenProc.Parameter("Test 2", "nvarchar(40)", true, null);
+				Assert.AreEqual(typeof(object), _p.Type);
 			}
 
 			[Test]
 			public void Mapping()
 			{
-				p = new global::GenProc.Parameter("Test 1", "nvarchar", true, null);
-				Assert.AreEqual(typeof(string), p.Type);
+				_p = new global::GenProc.Parameter("Test 1", "nvarchar", true, null);
+				Assert.AreEqual(typeof(string), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 2", "int", true, null);
-				Assert.AreEqual(typeof(int), p.Type);
+				_p = new global::GenProc.Parameter("Test 2", "int", true, null);
+				Assert.AreEqual(typeof(int), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 3", "flag", true, null);
-				Assert.AreEqual(typeof(bool), p.Type);
+				_p = new global::GenProc.Parameter("Test 3", "flag", true, null);
+				Assert.AreEqual(typeof(bool), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 4", "date", true, null);
-				Assert.AreEqual(typeof(DateTime), p.Type);
+				_p = new global::GenProc.Parameter("Test 4", "date", true, null);
+				Assert.AreEqual(typeof(DateTime), _p.Type);
 			}
 
 			[Test]
 			public void Case()
 			{
-				p = new global::GenProc.Parameter("Test 1", "date", true, null);
-				Assert.AreEqual(typeof(DateTime), p.Type);
+				_p = new global::GenProc.Parameter("Test 1", "date", true, null);
+				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 2", "DAte", true, null);
-				Assert.AreEqual(typeof(DateTime), p.Type);
+				_p = new global::GenProc.Parameter("Test 2", "DAte", true, null);
+				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 3", "Date", true, null);
-				Assert.AreEqual(typeof(DateTime), p.Type);
+				_p = new global::GenProc.Parameter("Test 3", "Date", true, null);
+				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				p = new global::GenProc.Parameter("Test 4", "DatE", true, null);
-				Assert.AreEqual(typeof(DateTime), p.Type);
+				_p = new global::GenProc.Parameter("Test 4", "DatE", true, null);
+				Assert.AreEqual(typeof(DateTime), _p.Type);
 			}
 		}
 
-		global::GenProc.Program genProc;
+		private Program _genProc;
 
 		[Test]
 		public void Parse()
 		{
-			genProc = new global::GenProc.Program(new global::GenProc.Configuration());
-			global::GenProc.Procedure p;
+			_genProc = new Program(new Configuration());
 
-			p = genProc.Parse("p_Test_Name");
+			Procedure p = _genProc.Parse("p_Test_Name");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("p_Test_Name", p.Original);
 			Assert.AreEqual("Name", p.Name);
-			Assert.AreEqual(new string[] { "Test" }, p.Path);
+			Assert.AreEqual(new[] { "Test" }, p.Path);
 
-			p = genProc.Parse("Test_Name");
+			p = _genProc.Parse("Test_Name");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("Test_Name", p.Original);
 			Assert.AreEqual("Name", p.Name);
-			Assert.AreEqual(new string[] { "Test" }, p.Path);
+			Assert.AreEqual(new[] { "Test" }, p.Path);
 
-			p = genProc.Parse("TestName");
+			p = _genProc.Parse("TestName");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("TestName", p.Original);
 			Assert.AreEqual("TestName", p.Name);
-			Assert.AreEqual(new string[] { "Misc" }, p.Path);
+			Assert.AreEqual(new[] { "Misc" }, p.Path);
 
-			p = genProc.Parse("Test_Second");
+			p = _genProc.Parse("Test_Second");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("Test_Second", p.Original);
 			Assert.AreEqual("Second", p.Name);
-			Assert.AreEqual(new string[] { "Test" }, p.Path);
+			Assert.AreEqual(new[] { "Test" }, p.Path);
 
-			p = genProc.Parse("Second_new");
+			p = _genProc.Parse("Second_new");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("Second_new", p.Original);
 			Assert.AreEqual("new", p.Name);
-			Assert.AreEqual(new string[] { "Second" }, p.Path);
+			Assert.AreEqual(new[] { "Second" }, p.Path);
 
-			p = genProc.Parse("Third_while");
+			p = _genProc.Parse("Third_while");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("Third_while", p.Original);
 			Assert.AreEqual("while", p.Name);
-			Assert.AreEqual(new string[] { "Third" }, p.Path);
+			Assert.AreEqual(new[] { "Third" }, p.Path);
 
-			p = genProc.Parse("p_Three_Deep_Procedure");
+			p = _genProc.Parse("p_Three_Deep_Procedure");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("p_Three_Deep_Procedure", p.Original);
 			Assert.AreEqual("Procedure", p.Name);
-			Assert.AreEqual(new string[] { "Three", "Deep" }, p.Path);
+			Assert.AreEqual(new[] { "Three", "Deep" }, p.Path);
 
-			p = genProc.Parse("s_Three");
+			p = _genProc.Parse("s_Three");
 			Assert.IsEmpty(p.Parameters);
 			Assert.AreEqual("s_Three", p.Original);
 			Assert.AreEqual("Three", p.Name);
-			Assert.AreEqual(new string[] { "Misc" }, p.Path);
+			Assert.AreEqual(new[] { "Misc" }, p.Path);
 		}
-    }
+
+		[Test]
+		public void LoadProcedures()
+		{
+			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
+			_genProc = new Program(new Configuration());
+
+			conn.Open();
+			_genProc.LoadProcedures(conn);
+			conn.Close();
+
+			/* Check loaded tree */
+			Assert.AreEqual(0, _genProc.Procedures.Leaves.Count);
+			Assert.AreEqual(3, _genProc.Procedures.Branches.Count);
+
+			Branch<Procedure> brch = _genProc.Procedures.Branches[0];
+			Assert.AreEqual("Completely", brch.Name);
+			Assert.AreEqual(1, brch.Leaves.Count);
+			Assert.AreEqual("Valid", brch.Leaves[0].Name);
+
+			brch = _genProc.Procedures.Branches[1];
+			Assert.AreEqual("Misc", brch.Name);
+			Assert.AreEqual(4, brch.Leaves.Count);
+			Assert.AreEqual("ListProcedures", brch.Leaves[0].Name);
+			Assert.AreEqual("ListTables", brch.Leaves[1].Name);
+			Assert.AreEqual("ListTypeTables", brch.Leaves[2].Name);
+			Assert.AreEqual("MissingUnderscore", brch.Leaves[3].Name);
+
+			brch = _genProc.Procedures.Branches[2];
+			Assert.AreEqual("No", brch.Name);
+			Assert.AreEqual(1, brch.Leaves.Count);
+			Assert.AreEqual("Params", brch.Leaves[0].Name);
+
+			/* Check procedure definitions */
+			Action<global::GenProc.Parameter, string, Type, string, bool, bool> verifyDefault = delegate(global::GenProc.Parameter parameter, string name, Type type, string def, bool isNull, bool isOutput)
+			{
+				Assert.AreEqual(name, parameter.Name);
+				Assert.AreEqual(type, parameter.Type);
+				Assert.AreEqual(def, parameter.Default);
+				Assert.AreEqual(isNull, parameter.IsNull);
+				Assert.AreEqual(isOutput, parameter.IsOutput);
+			};
+
+			Action<global::GenProc.Parameter, string, Type, bool, bool> verify = delegate(global::GenProc.Parameter parameter, string name, Type type, bool isNull, bool isOutput)
+			{
+				Assert.AreEqual(name, parameter.Name);
+				Assert.AreEqual(type, parameter.Type);
+				Assert.IsNullOrEmpty(parameter.Default);
+				Assert.AreEqual(isNull, parameter.IsNull);
+				Assert.AreEqual(isOutput, parameter.IsOutput);
+			};
+
+			Procedure proc = _genProc.Procedures.Branches[0].Leaves[0];
+			Assert.AreEqual(7, proc.Parameters.Count);
+
+			verify(proc.Parameters[0], "@Column", typeof(int), false, false);
+			verifyDefault(proc.Parameters[1], "@Second", typeof(byte), "0", false, false);
+			verify(proc.Parameters[2], "@Third", typeof(string), false, false);
+			verify(proc.Parameters[3], "@Nullable", typeof(int), true, false);
+			verifyDefault(proc.Parameters[4], "@Default", typeof(string), "\"test default\"", false, false);
+			verify(proc.Parameters[5], "@Output", typeof(int), true, true);
+			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), "\"\"", false, false);
+		}
+	}
 }

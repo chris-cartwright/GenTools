@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Text;
+﻿using System.Configuration;
 using Common;
 
 namespace GenTypes
@@ -17,7 +13,7 @@ namespace GenTypes
 		}
 	}
 
-	public class ConfigurationSection : Common.ConfigurationSectionBase<Configuration>
+	public class ConfigurationSection : ConfigurationSectionBase<Configuration>
 	{
 	}
 }

@@ -16,7 +16,7 @@ namespace GenProc
 	{
 		private static Branch<T> Resolve(Branch<T> branch, string[] parts)
 		{
-			Branch<T> brch = branch.Branches.Where(b => b.Name == parts[0]).FirstOrDefault();
+			Branch<T> brch = branch.Branches.FirstOrDefault(b => b.Name == parts[0]);
 			if (brch == null)
 			{
 				brch = new Branch<T>(parts[0]);
@@ -140,18 +140,14 @@ namespace GenProc
 			try
 			{
 				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
-				Configuration config;
 				string name = Helpers.GetConfig(args);
-				if (String.IsNullOrWhiteSpace(name))
-					config = new Configuration();
-				else
-					config = section.Get(name);
+				Configuration config = String.IsNullOrWhiteSpace(name) ? new Configuration() : section.Get(name);
 
 				OptionSet opts = new OptionSet()
 				{
-					{ "p|prefix:", "Prefix to use on naming collisions.", (string v) => config.CollisionPrefix = v },
+					{ "p|prefix:", "Prefix to use on naming collisions.", v => config.CollisionPrefix = v },
 					{ "m|monolithic", "Enable monolithic mode.", v => config.Monolithic = v != null },
-					{ "o|misc:", "Name of the class to use for procedures lacking underscores.", (string v) => config.MiscClass = v }
+					{ "o|misc:", "Name of the class to use for procedures lacking underscores.", v => config.MiscClass = v }
 				};
 
 				string[] extra = Helpers.Setup(args, ref config, out conn, opts);
@@ -197,15 +193,16 @@ namespace GenProc
 
 		public Procedure Parse(string full)
 		{
+			string name = full;
 			string prefix = full.Substring(0, 2);
 			if (prefix == "p_" || prefix == "s_")
-				full = full.Substring(2);
+				name = full.Substring(2);
 
-			IEnumerable<string> parts = full.Split('_').Where(p => p.Length > 0);
-			if (parts.Count() == 1)
+			string[] parts = name.Split('_').Where(p => p.Length > 0).ToArray();
+			if (parts.Length == 1)
 			{
 				Logger.Warn("Procedure missing namespaces: {0}", full);
-				return new Procedure(full, full, new string[] { _settings.MiscClass });
+				return new Procedure(full, name, new[] { _settings.MiscClass });
 			}
 
 			return new Procedure(full, parts.Last(), parts.Take(parts.Count() - 1).ToArray());
@@ -224,8 +221,7 @@ namespace GenProc
 				StringWriter str = new StringWriter();
 				WriteCodeMonolithic(str, Procedures, true);
 
-				Templates.File f = new Templates.File();
-				f.Session = new Dictionary<string, object>();
+				Templates.File f = new Templates.File() { Session = new Dictionary<string, object>() };
 				f.Session["namespace"] = _settings.MasterNamespace;
 				f.Session["class"] = str.ToString();
 				f.Initialize();
@@ -277,13 +273,16 @@ namespace GenProc
 						Convert.ToBoolean(reader["output"]),
 						reader["value"].ToString().Trim()
 					);
-					if (!p.IsOutput)
+					if (!String.IsNullOrWhiteSpace(p.Default))
 					{
 						if (p.Default.ToLower() == "null")
+						{
 							p.IsNull = true;
-						else if (p.Type == typeof(string))
+							p.Default = null;
+						}
+						else if (p.Type == typeof (string))
 							p.Default = '"' + p.Default.Trim('\'') + '"';
-						else if (p.Type == typeof(bool))
+						else if (p.Type == typeof (bool))
 							p.Default = p.Default == "0" ? "false" : "true";
 					}
 					else
@@ -314,13 +313,13 @@ namespace GenProc
 			Logger.Debug("Time spent inserting: {0}", inserts);
 		}
 
-		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node, int depth = 0)
+		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node)
 		{
 			node = node.TrimStart('.');
 			Directory.CreateDirectory(path);
 
 			foreach (Branch<Procedure> brch in branch.Branches)
-				WriteCodeMulti(brch, Path.Combine(path, branch.Name), node + "." + branch.Name, depth + 1);
+				WriteCodeMulti(brch, Path.Combine(path, branch.Name), node + "." + branch.Name);
 
 			if (branch.Leaves.Count == 0)
 				return;
@@ -335,8 +334,7 @@ namespace GenProc
 			StringBuilder funcs = new StringBuilder();
 			foreach (Procedure proc in branch.Leaves.OrderBy(p => p.Name))
 			{
-				Templates.Function func = new Templates.Function();
-				func.Session = new Dictionary<string, object>();
+				Templates.Function func = new Templates.Function { Session = new Dictionary<string, object>() };
 				func.Session["name"] = proc.Name;
 				func.Session["parameters"] = proc.Parameters.ToArray();
 				func.Session["procedure"] = proc.Original;
@@ -344,14 +342,12 @@ namespace GenProc
 				funcs.Append(func.TransformText());
 			}
 
-			Templates.Class c = new Templates.Class();
-			c.Session = new Dictionary<string, object>();
+			Templates.Class c = new Templates.Class() { Session = new Dictionary<string, object>() };
 			c.Session["functions"] = funcs.ToString();
 			c.Session["className"] = className;
 			c.Initialize();
 
-			Templates.File f = new Templates.File();
-			f.Session = new Dictionary<string, object>();
+			Templates.File f = new Templates.File() { Session = new Dictionary<string, object>() };
 			f.Session["namespace"] = node;
 			f.Session["class"] = c.TransformText();
 			f.Initialize();
@@ -382,16 +378,14 @@ namespace GenProc
 			{
 				foreach (Procedure proc in branch.Leaves.OrderBy(p => p.Name))
 				{
-					Templates.Function func = new Templates.Function();
-					func.Session = new Dictionary<string, object>();
+					Templates.Function func = new Templates.Function() { Session = new Dictionary<string, object>() };
 					func.Session["procedure"] = proc;
 					func.Initialize();
 					funcs.Append(func.TransformText());
 				}
 			}
 
-			Templates.Class c = new Templates.Class();
-			c.Session = new Dictionary<string, object>();
+			Templates.Class c = new Templates.Class() { Session = new Dictionary<string, object>() };
 			c.Session["functions"] = funcs.ToString();
 			c.Session["className"] = branch.Name;
 			c.Session["classes"] = classes.ToString();

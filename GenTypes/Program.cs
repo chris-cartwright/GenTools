@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Common;
+using GenTypes.Templates;
 
 namespace GenTypes
 {
@@ -51,13 +52,7 @@ namespace GenTypes
 		private Column _identity;
 		public Column Identity
 		{
-			get
-			{
-				if (_identity == null)
-					_identity = Columns.Where(c => c.IsIdentity).First();
-
-				return _identity;
-			}
+			get { return _identity ?? (_identity = Columns.First(c => c.IsIdentity)); }
 		}
 
 		public Table(string name)
@@ -121,12 +116,8 @@ namespace GenTypes
 			try
 			{
 				ConfigurationSection section = (ConfigurationSection)ConfigurationManager.GetSection("outputs");
-				Configuration config;
 				string name = Helpers.GetConfig(args);
-				if (String.IsNullOrWhiteSpace(name))
-					config = new Configuration();
-				else
-					config = section.Get(name);
+				Configuration config = String.IsNullOrWhiteSpace(name) ? new Configuration() : section.Get(name);
 
 				string[] extra = Helpers.Setup(args, ref config, out conn);
 
@@ -207,7 +198,7 @@ namespace GenTypes
 					reader = fetcher.ExecuteReader();
 
 					string dataColumn = t.Identity.Name.Substring(0, t.Identity.Name.Length - 2);
-					Column col = t.Columns.Where(p => p.Name == dataColumn && p.Type == typeof(string) && !p.IsNull).FirstOrDefault();
+					Column col = t.Columns.FirstOrDefault(p => p.Name == dataColumn && p.Type == typeof(string) && !p.IsNull);
 					if (col == null)
 					{
 						Logger.Info("Could not find value column: {0}", t.Name);
@@ -253,16 +244,16 @@ namespace GenTypes
 			StringBuilder classes = new StringBuilder();
 			foreach (Mapping map in Mappings)
 			{
-				Templates.ClassBase cls = null;
 				Type type = Type.GetType("GenTypes.Templates." + _settings.Language + ".Class");
-				cls = (Templates.ClassBase)Activator.CreateInstance(type);
+				Debug.Assert(type != null, "Could not get class template for " + _settings.Language);
+				ClassBase cls = (ClassBase)Activator.CreateInstance(type);
 				cls.Assign(map);
 				classes.Append(cls.TransformText());
 			}
 
-			Templates.FileBase file = null;
 			Type fileType = Type.GetType("GenTypes.Templates." + _settings.Language + ".File");
-			file = (Templates.FileBase)Activator.CreateInstance(fileType);
+			Debug.Assert(fileType != null, "Could not get file template for " + _settings.Language);
+			FileBase file = (FileBase)Activator.CreateInstance(fileType);
 			file.Assign(classes.ToString(), _settings.MasterNamespace);
 
 			StreamWriter writer = Helpers.OpenWriter(_settings.OutputFile);

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace GitVersion
 {
@@ -20,25 +17,27 @@ namespace GitVersion
 				bool dirty = true;
 				try
 				{
-					ProcessStartInfo git = new ProcessStartInfo("git", "rev-parse --short HEAD");
-					git.RedirectStandardOutput = true;
-					git.UseShellExecute = false;
-					git.CreateNoWindow = true;
+					ProcessStartInfo git = new ProcessStartInfo("git", "rev-parse --short HEAD")
+					{
+						RedirectStandardOutput = true,
+						UseShellExecute = false,
+						CreateNoWindow = true
+					};
 
-					Process proc = new Process();
-					proc.StartInfo = git;
+					Process proc = new Process() { StartInfo = git };
 					proc.Start();
 					proc.WaitForExit();
 
 					rev = proc.StandardOutput.ReadToEnd().Trim();
 
-					git = new ProcessStartInfo("git", "status --short");
-					git.RedirectStandardOutput = true;
-					git.UseShellExecute = false;
-					git.CreateNoWindow = true;
+					git = new ProcessStartInfo("git", "status --short")
+					{
+						RedirectStandardOutput = true,
+						UseShellExecute = false,
+						CreateNoWindow = true
+					};
 
-					proc = new Process();
-					proc.StartInfo = git;
+					proc = new Process() { StartInfo = git };
 					proc.Start();
 					proc.WaitForExit();
 
@@ -51,7 +50,7 @@ namespace GitVersion
 
 				StreamWriter sw = new StreamWriter("git.cs", false);
 				sw.WriteLine("using Common;\n");
-				sw.WriteLine(String.Format("[assembly: GitRevision(\"{0}\", {1})]", rev, dirty.ToString().ToLower()));
+				sw.WriteLine("[assembly: GitRevision(\"{0}\", {1})]", rev, dirty.ToString().ToLower());
 				sw.Close();
 
 				return 0;

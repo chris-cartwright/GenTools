@@ -281,7 +281,7 @@ namespace GenProc
 							p.Default = null;
 						}
 						else if (p.Type == typeof (string))
-							p.Default = '"' + p.Default.Trim('\'') + '"';
+							p.Default = p.Default.Trim('\'');
 						else if (p.Type == typeof (bool))
 							p.Default = p.Default == "0" ? "false" : "true";
 					}

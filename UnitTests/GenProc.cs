@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.SqlClient;
+using System.IO;
 using GenProc;
 using NUnit.Framework;
 
@@ -182,6 +183,17 @@ namespace UnitTests
 
 		private Program _genProc;
 
+		[SetUp]
+		public void SetUp()
+		{
+			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
+			_genProc = new Program(new Configuration() { OutputFile = "GenProc.cs" });
+
+			conn.Open();
+			_genProc.LoadProcedures(conn);
+			conn.Close();
+		}
+
 		[Test]
 		public void Parse()
 		{
@@ -239,13 +251,6 @@ namespace UnitTests
 		[Test]
 		public void LoadProcedures()
 		{
-			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
-			_genProc = new Program(new Configuration());
-
-			conn.Open();
-			_genProc.LoadProcedures(conn);
-			conn.Close();
-
 			/* Check loaded tree */
 			Assert.AreEqual(0, _genProc.Procedures.Leaves.Count);
 			Assert.AreEqual(3, _genProc.Procedures.Branches.Count);
@@ -282,21 +287,41 @@ namespace UnitTests
 			{
 				Assert.AreEqual(name, parameter.Name);
 				Assert.AreEqual(type, parameter.Type);
-				Assert.IsNullOrEmpty(parameter.Default);
+				// Only IsNull - an empty string is legitimate
+				Assert.IsNull(parameter.Default);
 				Assert.AreEqual(isNull, parameter.IsNull);
 				Assert.AreEqual(isOutput, parameter.IsOutput);
 			};
 
 			Procedure proc = _genProc.Procedures.Branches[0].Leaves[0];
 			Assert.AreEqual(7, proc.Parameters.Count);
-
 			verify(proc.Parameters[0], "@Column", typeof(int), false, false);
 			verifyDefault(proc.Parameters[1], "@Second", typeof(byte), "0", false, false);
 			verify(proc.Parameters[2], "@Third", typeof(string), false, false);
 			verify(proc.Parameters[3], "@Nullable", typeof(int), true, false);
-			verifyDefault(proc.Parameters[4], "@Default", typeof(string), "\"test default\"", false, false);
-			verify(proc.Parameters[5], "@Output", typeof(int), true, true);
-			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), "\"\"", false, false);
+			verifyDefault(proc.Parameters[4], "@Default", typeof(string), "test default", false, false);
+			verify(proc.Parameters[5], "@Output", typeof (int), true, true);
+			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), "", false, false);
+
+			proc = _genProc.Procedures.Branches[1].Leaves[3];
+			Assert.AreEqual(1, proc.Parameters.Count);
+			verify(proc.Parameters[0], "@Column", typeof (int), false, false);
+
+			proc = _genProc.Procedures.Branches[2].Leaves[0];
+			Assert.AreEqual(0, proc.Parameters.Count);
+		}
+
+		[Test]
+		public void WriteOutput()
+		{
+			string file = Path.Combine(Environment.CurrentDirectory, "GenProc.cs");
+			if (File.Exists(file))
+			{
+				File.Delete(file);
+			}
+
+			_genProc.Write();
+			Assert.IsTrue(File.Exists(file));
 		}
 	}
 }

@@ -1,10 +1,18 @@
-﻿using Common;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using Common;
 using NUnit.Framework;
 
 namespace UnitTests
 {
 	public class Common
 	{
+		private readonly Dictionary<string, string> _files = new Dictionary<string, string>()
+		{
+			{ "OpenWriter", Path.Combine(Environment.CurrentDirectory, "Test.readonly") }
+		};
+
 		[Test]
 		public void CleanName()
 		{
@@ -39,6 +47,55 @@ namespace UnitTests
 			Assert.AreEqual(Logger.Level.Error, copyTo.LoggingLevel);
 			Assert.AreEqual("Test", copyTo.MasterNamespace);
 			Assert.AreEqual("Connect", copyTo.ConnectionString);
+		}
+
+		[Test]
+		public void OpenWriter()
+		{
+			if (File.Exists(_files["OpenWriter"]))
+			{
+				try
+				{
+					File.Delete(_files["OpenWriter"]);
+				}
+				catch (Exception)
+				{
+					Console.Error.WriteLine("Previous test failed to delete test file.");
+					File.SetAttributes(_files["OpenWriter"], FileAttributes.Normal);
+					File.Delete(_files["OpenWriter"]);
+				}
+			}
+
+			File.Create(_files["OpenWriter"]).Close();
+			File.SetAttributes(_files["OpenWriter"], FileAttributes.ReadOnly);
+
+			Assert.AreEqual(FileAttributes.ReadOnly, File.GetAttributes(_files["OpenWriter"]));
+			Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllText(_files["OpenWriter"], "test"));
+
+			Assert.DoesNotThrow(delegate
+			{
+				using (StreamWriter sw = Helpers.OpenWriter(_files["OpenWriter"]))
+				{
+					sw.Write("test 2");
+				}
+			});
+
+			Assert.AreEqual("test 2", File.ReadAllText(_files["OpenWriter"]));
+			File.Delete(_files["OpenWriter"]);
+			Assert.IsFalse(File.Exists(_files["OpenWriter"]));
+		}
+
+		[TearDown]
+		public void TearDown()
+		{
+			if (TestContext.CurrentContext.Test.Name != "OpenWriter")
+				return;
+
+			if (!File.Exists(_files["OpenWriter"]))
+				return;
+
+			File.SetAttributes(_files["OpenWriter"], FileAttributes.Normal);
+			File.Delete(_files["OpenWriter"]);
 		}
 	}
 }

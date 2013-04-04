@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using GenProc;
 using NUnit.Framework;
 
@@ -9,6 +11,11 @@ namespace UnitTests
 	[TestFixture]
 	public class GenProc
 	{
+		private readonly Dictionary<string, string> _files = new Dictionary<string, string>()
+		{
+			{ "GenProc", Path.Combine(Environment.CurrentDirectory, "GenProc.cs") }
+		};
+
 		[TestFixture]
 		public class Branch
 		{
@@ -113,23 +120,21 @@ namespace UnitTests
 			[ExpectedException(typeof(ArgumentException), ExpectedMessage = "Cannot have duplicate leaves.")]
 			public void InsertDuplicate()
 			{
-				int i = 0;
-
-				_tree.Insert(new[] { "Branch 1", "Sub 1" }, i);
+				_tree.Insert(new[] { "Branch 1", "Sub 1" }, 0);
 				Assert.AreEqual(1, _tree.Branches.Count);
 				Assert.AreEqual(1, _tree.Branches[0].Branches.Count);
 				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
 				Assert.AreEqual("Sub 1", _tree.Branches[0].Branches[0].Name);
 				Assert.AreEqual(1, _tree.Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, _tree.Branches[0].Branches[0].Leaves[0]);
+				Assert.AreEqual(0, _tree.Branches[0].Branches[0].Leaves[0]);
 
-				_tree.Insert(new[] { "Branch 1", "Sub 1" }, i);
+				_tree.Insert(new[] { "Branch 1", "Sub 1" }, 0);
 				Assert.AreEqual(1, _tree.Branches.Count);
 				Assert.AreEqual(1, _tree.Branches[0].Branches.Count);
 				Assert.AreEqual("Branch 1", _tree.Branches[0].Name);
 				Assert.AreEqual("Sub 1", _tree.Branches[0].Branches[0].Name);
 				Assert.AreEqual(1, _tree.Branches[0].Branches[0].Leaves.Count);
-				Assert.AreEqual(i, _tree.Branches[0].Branches[0].Leaves[0]);
+				Assert.AreEqual(0, _tree.Branches[0].Branches[0].Leaves[0]);
 			}
 		}
 
@@ -187,7 +192,7 @@ namespace UnitTests
 		public void SetUp()
 		{
 			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
-			_genProc = new Program(new Configuration() { OutputFile = "GenProc.cs" });
+			_genProc = new Program(new Configuration() { OutputFile = "GenProc.cs", Monolithic = true });
 
 			conn.Open();
 			_genProc.LoadProcedures(conn);
@@ -300,12 +305,12 @@ namespace UnitTests
 			verify(proc.Parameters[2], "@Third", typeof(string), false, false);
 			verify(proc.Parameters[3], "@Nullable", typeof(int), true, false);
 			verifyDefault(proc.Parameters[4], "@Default", typeof(string), "test default", false, false);
-			verify(proc.Parameters[5], "@Output", typeof (int), true, true);
+			verify(proc.Parameters[5], "@Output", typeof(int), true, true);
 			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), "", false, false);
 
 			proc = _genProc.Procedures.Branches[1].Leaves[3];
 			Assert.AreEqual(1, proc.Parameters.Count);
-			verify(proc.Parameters[0], "@Column", typeof (int), false, false);
+			verify(proc.Parameters[0], "@Column", typeof(int), false, false);
 
 			proc = _genProc.Procedures.Branches[2].Leaves[0];
 			Assert.AreEqual(0, proc.Parameters.Count);
@@ -314,14 +319,23 @@ namespace UnitTests
 		[Test]
 		public void WriteOutput()
 		{
-			string file = Path.Combine(Environment.CurrentDirectory, "GenProc.cs");
-			if (File.Exists(file))
+			if (File.Exists(_files["GenProc"]))
 			{
-				File.Delete(file);
+				File.Delete(_files["GenProc"]);
 			}
 
 			_genProc.Write();
-			Assert.IsTrue(File.Exists(file));
+			Assert.IsTrue(File.Exists(_files["GenProc"]));
+		}
+
+		[TearDown]
+		public void TearDown()
+		{
+			foreach (string file in _files.Values.Where(File.Exists))
+			{
+				File.SetAttributes(file, FileAttributes.Normal);
+				File.Delete(file);
+			}
 		}
 	}
 }

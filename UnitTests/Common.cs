@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Common;
 using NUnit.Framework;
 
@@ -88,14 +89,11 @@ namespace UnitTests
 		[TearDown]
 		public void TearDown()
 		{
-			if (TestContext.CurrentContext.Test.Name != "OpenWriter")
-				return;
-
-			if (!File.Exists(_files["OpenWriter"]))
-				return;
-
-			File.SetAttributes(_files["OpenWriter"], FileAttributes.Normal);
-			File.Delete(_files["OpenWriter"]);
+			foreach (string file in _files.Values.Where(File.Exists))
+			{
+				File.SetAttributes(file, FileAttributes.Normal);
+				File.Delete(file);
+			}
 		}
 	}
 }

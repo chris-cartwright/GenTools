@@ -12,7 +12,7 @@ namespace UnitTests
 	[SetUpFixture]
 	public class Scaffold
 	{
-		public static readonly string ConnectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState";
+		public const string ConnectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState";
 
 		private static readonly Regex Splitter = new Regex("^go", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 		private enum SqlResource { KnownState, Cleanup, DatabaseSetup }

@@ -8,9 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Procedures
 {
@@ -35,9 +32,7 @@ namespace Procedures
 		public void Bind()
 		{
 			if (_cmd.Connection.State == ConnectionState.Open)
-			{
 				_cmd.Connection.Close();
-			}
 
 			AssignOutputs();
 		}
@@ -89,7 +84,7 @@ namespace Procedures
 		/// <returns>An enumerable dictionary collection</returns>
 		public IEnumerable<Dictionary<string, object>> Enumerable()
 		{
-			SqlDataReader reader = null;
+			SqlDataReader reader;
 
 			try
 			{
@@ -97,12 +92,12 @@ namespace Procedures
 				_cmd.Connection.Open();
 				reader = _cmd.ExecuteReader();
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
 					_cmd.Connection.Close();
 
-				throw ex;
+				throw;
 			}
 
 			while (reader.Read())
@@ -167,12 +162,12 @@ namespace Procedures
 				SqlDataReader reader = _cmd.ExecuteReader();
 				return reader;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				if (_cmd.Connection.State == ConnectionState.Open)
 					_cmd.Connection.Close();
 
-				throw ex;
+				throw;
 			}
 		}
 

@@ -19,10 +19,16 @@ Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenPro
 
 	if(p.IsNull)
 		sbp.Append(" = null");
-	else if(!String.IsNullOrEmpty(p.Default))
+	else if(p.Default != null)
 	{
 		sbp.Append(" = ");
+		if(p.Type == typeof(string))
+			sbp.Append("\"");
+
 		sbp.Append(p.Default);
+
+		if(p.Type == typeof(string))
+			sbp.Append("\"");
 	}
 	else if(p.IsOutput)
 	{
@@ -33,7 +39,7 @@ Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenPro
 };
 
 StringBuilder sb = new StringBuilder();
-foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).OrderBy(p => !String.IsNullOrEmpty(p.Default)))
+foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).OrderBy(p => p.Default != null))
 	GenParam(p, sb).Append(", ");
 
 #>

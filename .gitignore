@@ -155,3 +155,5 @@ $RECYCLE.BIN/
 /GenTypes/Templates/*.cs
 /GenTypes/git.cs
 /out.sql
+
+/UnitTests/Code/WrappedProcedure.cs

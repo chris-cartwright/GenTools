@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using GenProc;
 using NUnit.Framework;
 
@@ -187,6 +188,7 @@ namespace UnitTests
 		}
 
 		private Program _genProc;
+		private Assembly _assembly;
 
 		[SetUp]
 		public void SetUp()
@@ -197,6 +199,12 @@ namespace UnitTests
 			conn.Open();
 			_genProc.LoadProcedures(conn);
 			conn.Close();
+
+			foreach (string file in _files.Values.Where(File.Exists))
+			{
+				File.SetAttributes(file, FileAttributes.Normal);
+				File.Delete(file);
+			}
 		}
 
 		[Test]
@@ -251,10 +259,19 @@ namespace UnitTests
 			Assert.AreEqual("s_Three", p.Original);
 			Assert.AreEqual("Three", p.Name);
 			Assert.AreEqual(new[] { "Misc" }, p.Path);
+			Console.Write(DateTime.Now.Millisecond);
 		}
 
 		[Test]
-		public void LoadProcedures()
+		public void CompileExecute()
+		{
+			LoadProcedures();
+			WriteOutput();
+			_assembly = Utilities.Compile(_files["GenProc"], Utilities.Include.WrappedProcedure);
+			Execute();
+		}
+
+		private void LoadProcedures()
 		{
 			/* Check loaded tree */
 			Assert.AreEqual(0, _genProc.Procedures.Leaves.Count);
@@ -279,24 +296,26 @@ namespace UnitTests
 			Assert.AreEqual("Params", brch.Leaves[0].Name);
 
 			/* Check procedure definitions */
-			Action<global::GenProc.Parameter, string, Type, string, bool, bool> verifyDefault = delegate(global::GenProc.Parameter parameter, string name, Type type, string def, bool isNull, bool isOutput)
-			{
-				Assert.AreEqual(name, parameter.Name);
-				Assert.AreEqual(type, parameter.Type);
-				Assert.AreEqual(def, parameter.Default);
-				Assert.AreEqual(isNull, parameter.IsNull);
-				Assert.AreEqual(isOutput, parameter.IsOutput);
-			};
+			Action<global::GenProc.Parameter, string, Type, string, bool, bool> verifyDefault =
+				delegate(global::GenProc.Parameter parameter, string name, Type type, string def, bool isNull, bool isOutput)
+				{
+					Assert.AreEqual(name, parameter.Name);
+					Assert.AreEqual(type, parameter.Type);
+					Assert.AreEqual(def, parameter.Default);
+					Assert.AreEqual(isNull, parameter.IsNull);
+					Assert.AreEqual(isOutput, parameter.IsOutput);
+				};
 
-			Action<global::GenProc.Parameter, string, Type, bool, bool> verify = delegate(global::GenProc.Parameter parameter, string name, Type type, bool isNull, bool isOutput)
-			{
-				Assert.AreEqual(name, parameter.Name);
-				Assert.AreEqual(type, parameter.Type);
-				// Only IsNull - an empty string is legitimate
-				Assert.IsNull(parameter.Default);
-				Assert.AreEqual(isNull, parameter.IsNull);
-				Assert.AreEqual(isOutput, parameter.IsOutput);
-			};
+			Action<global::GenProc.Parameter, string, Type, bool, bool> verify =
+				delegate(global::GenProc.Parameter parameter, string name, Type type, bool isNull, bool isOutput)
+				{
+					Assert.AreEqual(name, parameter.Name);
+					Assert.AreEqual(type, parameter.Type);
+					// Only IsNull - an empty string is legitimate
+					Assert.IsNull(parameter.Default);
+					Assert.AreEqual(isNull, parameter.IsNull);
+					Assert.AreEqual(isOutput, parameter.IsOutput);
+				};
 
 			Procedure proc = _genProc.Procedures.Branches[0].Leaves[0];
 			Assert.AreEqual(7, proc.Parameters.Count);
@@ -316,8 +335,7 @@ namespace UnitTests
 			Assert.AreEqual(0, proc.Parameters.Count);
 		}
 
-		[Test]
-		public void WriteOutput()
+		private void WriteOutput()
 		{
 			if (File.Exists(_files["GenProc"]))
 			{
@@ -328,14 +346,30 @@ namespace UnitTests
 			Assert.IsTrue(File.Exists(_files["GenProc"]));
 		}
 
-		[TearDown]
-		public void TearDown()
+		private void Execute()
 		{
-			foreach (string file in _files.Values.Where(File.Exists))
+			Type[] types = _assembly.GetExportedTypes();
+			Assert.AreEqual(11, types.Length);
+
+			Type type;
+			ParamInfo[] expected;
+
+			//p_Completely_Valid
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.Completely+Valid");
+			Assert.IsNotNull(type);
+
+			expected = new[]
 			{
-				File.SetAttributes(file, FileAttributes.Normal);
-				File.Delete(file);
-			}
+				new ParamInfo("Column", typeof(int)),
+				new ParamInfo("Third", typeof(string)),
+				new ParamInfo("Second", typeof(byte)) { DefaultValue = 0 },
+				new ParamInfo("Nullable", typeof(int?)){ DefaultValue = null},
+				new ParamInfo("Default", typeof(string)) { DefaultValue = "test default" },
+				new ParamInfo("Output", typeof(int?)) { IsOut = true },
+				new ParamInfo("DefString", typeof(string)) { DefaultValue = "" }
+			};
+
+			expected.Apply(type.GetConstructors()[0].GetParameters().OrderBy(p => p.Position), ParamInfo.AreEqual);
 		}
 	}
 }

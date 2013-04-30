@@ -351,10 +351,12 @@ namespace UnitTests
 			Type[] types = _assembly.GetExportedTypes();
 			Assert.AreEqual(11, types.Length);
 
+			// ReSharper disable JoinDeclarationAndInitializer
 			Type type;
 			ParamInfo[] expected;
+			// ReSharper restore JoinDeclarationAndInitializer
 
-			//p_Completely_Valid
+			/* p_Completely_Valid */
 			type = types.FirstOrDefault(t => t.FullName == "Procedures.Completely+Valid");
 			Assert.IsNotNull(type);
 
@@ -365,11 +367,25 @@ namespace UnitTests
 				new ParamInfo("Second", typeof(byte)) { DefaultValue = 0 },
 				new ParamInfo("Nullable", typeof(int?)){ DefaultValue = null},
 				new ParamInfo("Default", typeof(string)) { DefaultValue = "test default" },
-				new ParamInfo("Output", typeof(int?)) { IsOut = true },
+				//new ParamInfo("Output", typeof(int?)) { IsOut = true },
 				new ParamInfo("DefString", typeof(string)) { DefaultValue = "" }
 			};
-
 			expected.Apply(type.GetConstructors()[0].GetParameters().OrderBy(p => p.Position), ParamInfo.AreEqual);
+
+			/* p_MissingUnderscore */
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.Misc+MissingUnderscore");
+			Assert.IsNotNull(type);
+
+			expected = new[]
+			{
+				new ParamInfo("Column", typeof(int))
+			};
+			expected.Apply(type.GetConstructors()[0].GetParameters().OrderBy(p => p.Position), ParamInfo.AreEqual);
+
+			/* p_No_Params */
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.No+Params");
+			Assert.IsNotNull(type);
+			Assert.IsEmpty(type.GetConstructors()[0].GetParameters());
 		}
 	}
 }

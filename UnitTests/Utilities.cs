@@ -144,12 +144,10 @@ namespace UnitTests
 			Assert.AreEqual(lhs.Name, rhs.Name, lhs.Name);
 			Assert.AreEqual(lhs.ParameterType, rhs.ParameterType, lhs.Name);
 			Assert.AreEqual(lhs.DefaultValue, rhs.DefaultValue, lhs.Name);
-			Assert.AreEqual(lhs.IsOptional, rhs.IsOptional, lhs.Name);
 			Assert.AreEqual(lhs.IsOut, rhs.IsOut, lhs.Name);
 		}
 
 		public Object DefaultValue { get; set; }
-		public bool IsOptional { get; set; }
 		public bool IsOut { get; set; }
 		public string Name { get; set; }
 		public Type ParameterType { get; set; }

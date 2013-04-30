@@ -39,7 +39,10 @@ Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenPro
 };
 
 StringBuilder sb = new StringBuilder();
-foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).OrderBy(p => p.Default != null))
+foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Where(p => p.Default == null && !p.IsNull))
+	GenParam(p, sb).Append(", ");
+
+foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Where(p => p.Default != null || p.IsNull))
 	GenParam(p, sb).Append(", ");
 
 #>

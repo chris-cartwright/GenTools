@@ -13,7 +13,7 @@ namespace UnitTests
 {
 	internal static class Utilities
 	{
-		public enum Include { WrappedProcedure };
+		public enum Include { GenProc, GenTable };
 
 		private static readonly string[] Assemblies = new[]
 		{
@@ -69,12 +69,18 @@ namespace UnitTests
 
 			List<string> files = new List<string>() { file };
 
-			string path = null;
-			if (inc == Include.WrappedProcedure)
-				path = ExtractCode("WrappedProcedure.cs");
+			List<string> path = new List<string>();
+			if (inc == Include.GenProc)
+				path.Add(ExtractCode("WrappedProcedure.cs"));
 
-			if (path != null)
-				files.Add(path);
+			if (inc == Include.GenTable)
+			{
+				path.Add(ExtractCode("WrappedTable.cs"));
+				path.Add(ExtractCode("GenTableExtra.cs"));
+			}
+
+			if (path.Count > 0)
+				files.AddRange(path);
 
 			CompilerResults cr = csc.CompileAssemblyFromFile(ps, files.ToArray());
 			if (cr.Errors.Count > 0)
@@ -96,8 +102,15 @@ namespace UnitTests
 			IEnumerator<TSecond> enumer = second.GetEnumerator();
 			foreach (TFirst f in first)
 			{
-				enumer.MoveNext();
-				action(f, enumer.Current);
+				try
+				{
+					enumer.MoveNext();
+					action(f, enumer.Current);
+				}
+				catch (InvalidOperationException)
+				{
+					Assert.Fail("Enumeration sizes do not match.");
+				}
 			}
 		}
 	}
@@ -157,6 +170,24 @@ namespace UnitTests
 			DefaultValue = DBNull.Value;
 			Name = name;
 			ParameterType = parameterType;
+		}
+	}
+
+	internal class PropInfo
+	{
+		public static void AreEqual(PropInfo lhs, PropertyInfo rhs)
+		{
+			Assert.AreEqual(lhs.Name, rhs.Name, lhs.Name);
+			Assert.AreEqual(lhs.PropertyType, rhs.PropertyType, lhs.Name);
+		}
+
+		public Type PropertyType { get; set; }
+		public string Name { get; set; }
+
+		public PropInfo(string name, Type propertyType)
+		{
+			PropertyType = propertyType;
+			Name = name;
 		}
 	}
 }

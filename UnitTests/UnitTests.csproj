@@ -47,6 +47,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Code\WrappedProcedure.cs" />
+    <EmbeddedResource Include="Code\WrappedTable.cs" />
+    <EmbeddedResource Include="Code\GenTableExtra.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="GenProc.cs" />
     <Compile Include="GenTable.cs" />
@@ -86,7 +88,8 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy "$(SolutionDir)DatabaseSetup.sql" "$(ProjectDir)\SQL\DatabaseSetup.sql"
-copy "$(SolutionDir)GenProc\Templates\Files\WrappedProcedure.cs" "$(ProjectDir)\Code\WrappedProcedure.cs"</PreBuildEvent>
+copy "$(SolutionDir)GenProc\Templates\Files\WrappedProcedure.cs" "$(ProjectDir)\Code\WrappedProcedure.cs"
+copy "$(SolutionDir)GenTable\Templates\Files\WrappedTable.cs" "$(ProjectDir)\Code\WrappedTable.cs"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

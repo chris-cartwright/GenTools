@@ -157,3 +157,4 @@ $RECYCLE.BIN/
 /out.sql
 
 /UnitTests/Code/WrappedProcedure.cs
+/UnitTests/Code/WrappedTable.cs

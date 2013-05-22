@@ -194,7 +194,7 @@ namespace UnitTests
 		public void SetUp()
 		{
 			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
-			_genProc = new Program(new Configuration() { OutputFile = "GenProc.cs", Monolithic = true });
+			_genProc = new Program(new Configuration() { OutputFile = _files["GenProc"], Monolithic = true });
 
 			conn.Open();
 			_genProc.LoadProcedures(conn);
@@ -267,7 +267,7 @@ namespace UnitTests
 		{
 			LoadProcedures();
 			WriteOutput();
-			_assembly = Utilities.Compile(_files["GenProc"], Utilities.Include.WrappedProcedure);
+			_assembly = Utilities.Compile(_files["GenProc"], Utilities.Include.GenProc);
 			Execute();
 		}
 
@@ -365,7 +365,7 @@ namespace UnitTests
 				new ParamInfo("Column", typeof(int)),
 				new ParamInfo("Third", typeof(string)),
 				new ParamInfo("Second", typeof(byte)) { DefaultValue = 0 },
-				new ParamInfo("Nullable", typeof(int?)){ DefaultValue = null},
+				new ParamInfo("Nullable", typeof(int?)) { DefaultValue = null},
 				new ParamInfo("Default", typeof(string)) { DefaultValue = "test default" },
 				//new ParamInfo("Output", typeof(int?)) { IsOut = true },
 				new ParamInfo("DefString", typeof(string)) { DefaultValue = "" }

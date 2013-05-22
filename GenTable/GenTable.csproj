@@ -58,7 +58,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>File.tt</DependentUpon>
     </Compile>
-    <Compile Include="Templates\Files\WrappedTable.cs" />
+    <None Include="Templates\Files\WrappedTable.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

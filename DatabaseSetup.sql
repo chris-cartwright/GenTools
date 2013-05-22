@@ -148,6 +148,10 @@ begin
     if @EndPos <> 0
       select @DefaultValue = rtrim(left(@DefaultValue, @EndPos - 1))
 
+    select @EndPos = charindex('/*', @DefaultValue)
+    if @EndPos <> 0
+      select @DefaultValue = rtrim(left(@DefaultValue, @EndPos - 1))
+
     return @DefaultValue
   end
 end

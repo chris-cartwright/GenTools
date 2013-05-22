@@ -44,7 +44,7 @@
 				conn.Open();
 				SqlDataReader reader = cmd.ExecuteReader();
 				if(!reader.HasRows)
-					throw new Exception("Record does not exist.");
+					return null;
 
 				reader.Read();
 				T ret = new T();

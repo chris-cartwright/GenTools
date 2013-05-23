@@ -8,6 +8,9 @@
 	{
 		public static T Populate(Dictionary<string, object> data)
 		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+
 			T ret = new T();
 			<# foreach(Column col in table.Columns) { #>if(data.ContainsKey("<#=col.Name #>"))
 			{

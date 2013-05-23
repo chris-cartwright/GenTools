@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -111,6 +110,7 @@ namespace UnitTests
 			_assembly = Utilities.Compile(_files["GenTable"], Utilities.Include.GenTable);
 			Execute();
 			Select();
+			Populate();
 		}
 
 		private void LoadTables()
@@ -364,6 +364,8 @@ namespace UnitTests
 			// ReSharper disable JoinDeclarationAndInitializer
 			object row;
 			MethodInfo method;
+			PropertyInfo id;
+			PropertyInfo value;
 			// ReSharper restore JoinDeclarationAndInitializer
 
 			Type type = types.FirstOrDefault(t => t.Name == "BadColumn");
@@ -371,24 +373,89 @@ namespace UnitTests
 
 			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
 			Assert.IsNotNull(field);
-			
 			field.SetValue(null, Scaffold.ConnectionString);
+
+			id = type.GetProperty("BadColumnID");
+			Assert.IsNotNull(id);
+
+			value = type.GetProperty("DoesntExist");
+			Assert.IsNotNull(value);
+
 			method = type.GetMethod("Load", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+			Assert.IsNotNull(method);
 
-			row = method.Invoke(null, new object[] { 1 });
-			Assert.AreEqual("Test", type.GetProperty("DoesntExist").GetValue(row, null));
-			Assert.AreEqual(1, type.GetProperty("BadColumnID").GetValue(row, null));
+			Action<int, string> load = delegate(int lId, string eValue)
+			{
+				row = method.Invoke(null, new object[] { lId });
+				Assert.AreEqual(lId, id.GetValue(row, null));
+				Assert.AreEqual(eValue, value.GetValue(row, null));
+			};
 
-			row = method.Invoke(null, new object[] { 2 });
-			Assert.AreEqual("Test 2", type.GetProperty("DoesntExist").GetValue(row, null));
-			Assert.AreEqual(2, type.GetProperty("BadColumnID").GetValue(row, null));
-
-			row = method.Invoke(null, new object[] { 3 });
-			Assert.AreEqual("Test 3", type.GetProperty("DoesntExist").GetValue(row, null));
-			Assert.AreEqual(3, type.GetProperty("BadColumnID").GetValue(row, null));
+			load(1, "Test");
+			load(2, "Test 2");
+			load(3, "Test 3");
 
 			row = method.Invoke(null, new object[] { 4 });
 			Assert.IsNull(row);
+		}
+
+		private void Populate()
+		{
+			Type[] types = _assembly.GetExportedTypes();
+
+			// ReSharper disable JoinDeclarationAndInitializer
+			object row;
+			MethodInfo method;
+			PropertyInfo id;
+			PropertyInfo value;
+			// ReSharper restore JoinDeclarationAndInitializer
+
+			Type type = types.FirstOrDefault(t => t.Name == "BadColumn");
+			Assert.IsNotNull(type);
+
+			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
+			Assert.IsNotNull(field);
+			field.SetValue(null, Scaffold.ConnectionString);
+
+			id = type.GetProperty("BadColumnID");
+			Assert.IsNotNull(id);
+
+			value = type.GetProperty("DoesntExist");
+			Assert.IsNotNull(value);
+
+			method = type.GetMethod("Populate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+			Assert.IsNotNull(method);
+
+			Action<Dictionary<string, object>, int, string> populate = delegate(Dictionary<string, object> data, int eId, string eValue)
+			{
+				row = method.Invoke(null, new object[] { data });
+				Assert.AreEqual(row.GetType(), type);
+				Assert.AreEqual(eId, id.GetValue(row, null));
+				Assert.AreEqual(eValue, value.GetValue(row, null));
+			};
+
+			populate(new Dictionary<string, object>() {
+				{ "BadColumnID", 4 },
+				{ "DoesntExist", "Blarg" }
+			}, 4, "Blarg");
+
+			populate(new Dictionary<string, object>(), default(int), default(string));
+
+			populate(new Dictionary<string, object>() {
+				{ "BadColumnID", 4 }
+			}, 4, default(string));
+
+			Assert.Throws<ArgumentNullException>(() =>
+			{
+				try
+				{
+					method.Invoke(null, new object[] { null });
+				}
+				catch (Exception ex)
+				{
+					throw ex.InnerException;
+				}
+			});
 		}
 	}
 }

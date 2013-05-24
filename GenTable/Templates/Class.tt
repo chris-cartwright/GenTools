@@ -26,11 +26,7 @@
 		{
 			StringBuilder cols = new StringBuilder();
 			foreach(Column col in table.Columns)
-			{
-				cols.Append("[");
-				cols.Append(col.Name);
-				cols.Append("],");
-			}
+				cols.Append("[").Append(col.Name).Append("],");
 
 			string columns = cols.ToString().TrimEnd(',');
 		#>
@@ -54,6 +50,33 @@
 				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = <# if(!col.IsNull) { #>(<#=col.Type.Name #>)reader["<#=col.Name #>"]<# } else { #>reader["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray) { #>?<# } } #>;
 				<# } #>
 				return ret;
+			}
+			finally
+			{
+				if(conn.State == ConnectionState.Open)
+					conn.Close();
+			}
+		}
+		<#
+			cols = new StringBuilder();
+			foreach(Column col in table.Columns.Where(c => c.Name != ident.Name))
+				cols.Append("[").Append(col.Name).Append("]=@").Append(col.NameClean).Append(",");
+
+			columns = cols.ToString().TrimEnd(',');
+		#>
+		protected static bool SaveFull(T t)
+		{
+			SqlConnection conn = new SqlConnection(ConnectionString);
+			SqlCommand cmd = new SqlCommand();
+			cmd.Connection = conn;
+			cmd.CommandText = "update [<#=table.Name #>] set <#=columns #> where [<#=ident.Name #>]=@<#=ident.NameClean #>";
+			<# foreach(Column col in table.Columns) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #>);
+			<# } #>
+
+			try
+			{
+				conn.Open();
+				return cmd.ExecuteNonQuery() > 0;
 			}
 			finally
 			{

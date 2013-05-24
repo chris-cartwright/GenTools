@@ -7,5 +7,10 @@ namespace Tables.Extra
 		{
 			return LoadFull(id);
 		}
+
+		public static bool Save(BadColumn column)
+		{
+			return SaveFull(column);
+		}
 	}
 }

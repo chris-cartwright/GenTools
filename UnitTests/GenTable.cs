@@ -17,6 +17,12 @@ namespace UnitTests
 			{ "GenTable", Path.Combine(Environment.CurrentDirectory, "GenTable.cs") }
 		};
 
+		private class Columns
+		{
+			public PropertyInfo Id;
+			public PropertyInfo Value;
+		}
+
 		[TestFixture]
 		public class TableTests
 		{
@@ -85,6 +91,9 @@ namespace UnitTests
 		private Program _genTable;
 		private Assembly _assembly;
 
+		private Type _type;
+		private Columns _columns;
+
 		[SetUp]
 		public void SetUp()
 		{
@@ -109,8 +118,9 @@ namespace UnitTests
 			WriteOutput();
 			_assembly = Utilities.Compile(_files["GenTable"], Utilities.Include.GenTable);
 			Execute();
-			Select();
+			LoadFull();
 			Populate();
+			SaveFull();
 		}
 
 		private void LoadTables()
@@ -357,81 +367,36 @@ namespace UnitTests
 			#endregion
 		}
 
-		private void Select()
+		private void LoadFull()
 		{
-			Type[] types = _assembly.GetExportedTypes();
-
-			// ReSharper disable JoinDeclarationAndInitializer
-			object row;
-			MethodInfo method;
-			PropertyInfo id;
-			PropertyInfo value;
-			// ReSharper restore JoinDeclarationAndInitializer
-
-			Type type = types.FirstOrDefault(t => t.Name == "BadColumn");
-			Assert.IsNotNull(type);
-
-			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
-			Assert.IsNotNull(field);
-			field.SetValue(null, Scaffold.ConnectionString);
-
-			id = type.GetProperty("BadColumnID");
-			Assert.IsNotNull(id);
-
-			value = type.GetProperty("DoesntExist");
-			Assert.IsNotNull(value);
-
-			method = type.GetMethod("Load", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-			Assert.IsNotNull(method);
+			LoadGeneric("BadColumn", "BadColumnID", "DoesntExist");
+			MethodInfo method = LoadMethod("Load");
 
 			Action<int, string> load = delegate(int lId, string eValue)
 			{
-				row = method.Invoke(null, new object[] { lId });
-				Assert.AreEqual(lId, id.GetValue(row, null));
-				Assert.AreEqual(eValue, value.GetValue(row, null));
+				object row = method.InvokeStatic(lId);
+				Assert.AreEqual(lId, _columns.Id.GetValue(row, null));
+				Assert.AreEqual(eValue, _columns.Value.GetValue(row, null));
 			};
 
 			load(1, "Test");
 			load(2, "Test 2");
 			load(3, "Test 3");
 
-			row = method.Invoke(null, new object[] { 4 });
-			Assert.IsNull(row);
+			Assert.IsNull(method.InvokeStatic(4));
 		}
 
 		private void Populate()
 		{
-			Type[] types = _assembly.GetExportedTypes();
-
-			// ReSharper disable JoinDeclarationAndInitializer
-			object row;
-			MethodInfo method;
-			PropertyInfo id;
-			PropertyInfo value;
-			// ReSharper restore JoinDeclarationAndInitializer
-
-			Type type = types.FirstOrDefault(t => t.Name == "BadColumn");
-			Assert.IsNotNull(type);
-
-			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
-			Assert.IsNotNull(field);
-			field.SetValue(null, Scaffold.ConnectionString);
-
-			id = type.GetProperty("BadColumnID");
-			Assert.IsNotNull(id);
-
-			value = type.GetProperty("DoesntExist");
-			Assert.IsNotNull(value);
-
-			method = type.GetMethod("Populate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-			Assert.IsNotNull(method);
+			LoadGeneric("BadColumn", "BadColumnID", "DoesntExist");
+			MethodInfo method = LoadMethod("Populate");
 
 			Action<Dictionary<string, object>, int, string> populate = delegate(Dictionary<string, object> data, int eId, string eValue)
 			{
-				row = method.Invoke(null, new object[] { data });
-				Assert.AreEqual(row.GetType(), type);
-				Assert.AreEqual(eId, id.GetValue(row, null));
-				Assert.AreEqual(eValue, value.GetValue(row, null));
+				object row = method.InvokeStatic(data);
+				Assert.AreEqual(row.GetType(), _type);
+				Assert.AreEqual(eId, _columns.Id.GetValue(row, null));
+				Assert.AreEqual(eValue, _columns.Value.GetValue(row, null));
 			};
 
 			populate(new Dictionary<string, object>() {
@@ -445,17 +410,61 @@ namespace UnitTests
 				{ "BadColumnID", 4 }
 			}, 4, default(string));
 
-			Assert.Throws<ArgumentNullException>(() =>
+			// Can't use InvokeStatic. Passing a single null 'disables' the params behaviour
+			Assert.Throws(Has.InnerException.TypeOf<ArgumentNullException>(), () => method.Invoke(null, new object[] { null }));
+		}
+
+		private void SaveFull()
+		{
+			LoadGeneric("BadColumn", "BadColumnID", "DoesntExist");
+			MethodInfo save = LoadMethod("Save");
+			MethodInfo load = LoadMethod("Load");
+
+			Action<int, string> saveLoad = delegate(int id, string value)
 			{
-				try
-				{
-					method.Invoke(null, new object[] { null });
-				}
-				catch (Exception ex)
-				{
-					throw ex.InnerException;
-				}
-			});
+				object row = Activator.CreateInstance(_type);
+				_columns.Id.SetValue(row, id, null);
+				_columns.Value.SetValue(row, value, null);
+				Assert.IsTrue((bool)save.InvokeStatic(row));
+
+				row = load.InvokeStatic(id);
+				Assert.IsNotNull(row);
+				Assert.AreEqual(value, _columns.Value.GetValue(row, null));
+			};
+
+			saveLoad(1, "Blarg");
+			saveLoad(2, "Blarg 2");
+			saveLoad(3, "");
+
+			object fail = Activator.CreateInstance(_type);
+			_columns.Id.SetValue(fail, 4, null);
+			_columns.Value.SetValue(fail, "This should fail", null);
+			Assert.IsFalse((bool)save.InvokeStatic(fail));
+		}
+
+		private MethodInfo LoadMethod(string name)
+		{
+			MethodInfo method = _type.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+			Assert.IsNotNull(method);
+			return method;
+		}
+
+		private void LoadGeneric(string name, string idName, string valueName)
+		{
+			_type = _assembly.GetExportedTypes().FirstOrDefault(t => t.Name == name);
+			Assert.IsNotNull(_type);
+
+			FieldInfo field = _type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
+			Assert.IsNotNull(field);
+			field.SetValue(null, Scaffold.ConnectionString);
+
+			PropertyInfo id = _type.GetProperty(idName);
+			Assert.IsNotNull(id);
+
+			PropertyInfo value = _type.GetProperty(valueName);
+			Assert.IsNotNull(value);
+
+			_columns = new Columns() { Id = id, Value = value };
 		}
 	}
 }

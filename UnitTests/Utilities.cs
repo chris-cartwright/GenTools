@@ -113,6 +113,11 @@ namespace UnitTests
 				}
 			}
 		}
+
+		public static object InvokeStatic(this MethodInfo method, params object[] parameters)
+		{
+			return method.Invoke(null, parameters);
+		}
 	}
 
 	public class OrderedDictionary<TKey, TValue> : Dictionary<TKey, TValue>

@@ -13,4 +13,17 @@ namespace Tables.Extra
 			return SaveFull(column);
 		}
 	}
+
+	public class Unique : UniqueValues<Unique>
+	{
+		public static Unique Load(byte id)
+		{
+			return LoadFull(id);
+		}
+
+		public static object Create(Unique column)
+		{
+			return CreateFull(column);
+		}
+	}
 }

@@ -121,12 +121,13 @@ namespace UnitTests
 			LoadFull();
 			Populate();
 			SaveFull();
+			CreateFull();
 		}
 
 		private void LoadTables()
 		{
 			/* Check loaded tables */
-			Assert.AreEqual(11, _genTable.Tables.Count);
+			Assert.AreEqual(12, _genTable.Tables.Count);
 
 			Table table = null;
 			int i = 0;
@@ -250,6 +251,15 @@ namespace UnitTests
 			);
 
 			checkTableIdent(
+				"UniqueValues",
+				new[] {
+					new Column("UniqueID", typeof(byte)) { IsIdentity = true },
+					new Column("Value", typeof(string))
+				},
+				"UniqueID"
+			);
+
+			checkTableIdent(
 				"WrongType_",
 				new[] {
 					new Column("WrongTypeID", typeof(short)) { IsIdentity = true },
@@ -273,7 +283,7 @@ namespace UnitTests
 		private void Execute()
 		{
 			Type[] types = _assembly.GetExportedTypes();
-			Assert.AreEqual(12, types.Count(t => t.Namespace == "Tables"));
+			Assert.AreEqual(13, types.Count(t => t.Namespace == "Tables"));
 
 			// ReSharper disable JoinDeclarationAndInitializer
 			Type type;
@@ -440,6 +450,34 @@ namespace UnitTests
 			_columns.Id.SetValue(fail, 4, null);
 			_columns.Value.SetValue(fail, "This should fail", null);
 			Assert.IsFalse((bool)save.InvokeStatic(fail));
+		}
+
+		private void CreateFull()
+		{
+			LoadGeneric("Unique", "UniqueID", "Value");
+			MethodInfo create = LoadMethod("Create");
+			MethodInfo load = LoadMethod("Load");
+
+			byte createId = 0;
+
+			Action<string> createLoad = delegate(string value)
+			{
+				object row = Activator.CreateInstance(_type);
+				_columns.Value.SetValue(row, value, null);
+				byte id = (byte)create.InvokeStatic(row);
+				Assert.AreEqual(++createId, id);
+				
+				row = load.InvokeStatic(id);
+				Assert.IsNotNull(row);
+				Assert.AreEqual(value, _columns.Value.GetValue(row, null));
+			};
+
+			createLoad("Value");
+			createLoad("Value 2");
+
+			object fail = Activator.CreateInstance(_type);
+			_columns.Value.SetValue(fail, "Value", null);
+			Assert.Throws(Has.InnerException.TypeOf<SqlException>(), () => create.InvokeStatic(fail));
 		}
 
 		private MethodInfo LoadMethod(string name)

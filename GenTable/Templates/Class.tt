@@ -84,6 +84,39 @@
 					conn.Close();
 			}
 		}
+		<#
+			cols = new StringBuilder();
+			foreach(Column col in table.Columns.Where(c => c.Name != ident.Name))
+				cols.Append("[").Append(col.Name).Append("],");
+
+			columns = cols.ToString().TrimEnd(',');
+
+			cols = new StringBuilder();
+			foreach(Column col in table.Columns.Where(c => c.Name != ident.Name))
+				cols.Append("@").Append(col.NameClean).Append(",");
+
+			string values = cols.ToString().TrimEnd(',');
+		#>
+		protected static <#=ident.Type.Name #> CreateFull(T t)
+		{
+			SqlConnection conn = new SqlConnection(ConnectionString);
+			SqlCommand cmd = new SqlCommand();
+			cmd.Connection = conn;
+			cmd.CommandText = "insert into [<#=table.Name #>](<#=columns #>) values (<#=values #>); select scope_identity()";
+			<# foreach(Column col in table.Columns.Where(c => c.Name != ident.Name)) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #>);
+			<# } #>
+
+			try
+			{
+				conn.Open();
+				return (<#=ident.Type.Name #>)((decimal)cmd.ExecuteScalar());
+			}
+			finally
+			{
+				if(conn.State == ConnectionState.Open)
+					conn.Close();
+			}
+		}
 		<# } #>
 
 		<# foreach(Column col in table.Columns) { #>public <#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #> { get; set; }

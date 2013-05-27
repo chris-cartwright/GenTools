@@ -39,8 +39,8 @@ namespace Common
 			{ "flag",				typeof(bool) },
 			{ "hierarchyid",		typeof(string) },
 			{ "tinyint",			typeof(byte) },
-			{ "nchar",				typeof(char) },
-			{ "char",				typeof(char) },
+			{ "nchar",				typeof(string) },
+			{ "char",				typeof(string) },
 			{ "image",				typeof(byte[]) },
 			{ "uniqueidentifier",	typeof(Guid) },
 			{ "text",				typeof(string) },
@@ -136,7 +136,7 @@ namespace Common
 			ConfigurationElementBase config = new ConfigurationElementBase();
 			config.CopyFrom(ref appConfig);
 
-			short verbosity = 0;
+			short verbosity = -1;
 			bool help = false;
 			OptionSet options = new OptionSet()
 			{

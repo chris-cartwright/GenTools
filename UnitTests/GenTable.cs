@@ -492,9 +492,7 @@ namespace UnitTests
 			_type = _assembly.GetExportedTypes().FirstOrDefault(t => t.Name == name);
 			Assert.IsNotNull(_type);
 
-			FieldInfo field = _type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
-			Assert.IsNotNull(field);
-			field.SetValue(null, Scaffold.ConnectionString);
+			Utilities.SetConnectionString(ref _type);
 
 			PropertyInfo id = _type.GetProperty(idName);
 			Assert.IsNotNull(id);

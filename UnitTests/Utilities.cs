@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using Microsoft.CSharp;
 using NUnit.Framework;
 
@@ -117,6 +118,26 @@ namespace UnitTests
 		public static object InvokeStatic(this MethodInfo method, params object[] parameters)
 		{
 			return method.Invoke(null, parameters);
+		}
+
+		public static void CompareTo<T>(this T lhs, T rhs, BindingFlags flags = BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public)
+			where T : class
+		{
+			Type type = typeof(T);
+			foreach (PropertyInfo prop in type.GetProperties(flags))
+				Assert.AreEqual(prop.GetValue(lhs, null), prop.GetValue(rhs, null));
+
+			foreach (FieldInfo field in type.GetFields(flags))
+				Assert.AreEqual(field.GetValue(lhs), field.GetValue(rhs));
+		}
+
+		public static void SetConnectionString(ref Type type)
+		{
+			Assert.IsNotNull(type);
+
+			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
+			Assert.IsNotNull(field);
+			field.SetValue(null, Scaffold.ConnectionString);
 		}
 	}
 

@@ -2,6 +2,7 @@
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 CREATE procedure [dbo].[p_Completely_Valid]
   @Column int
 , @Second tinyint = 0
@@ -9,17 +10,17 @@ CREATE procedure [dbo].[p_Completely_Valid]
 , @Nullable int = null
 , @Default nvarchar(50) = 'test default'
 , @Output int = null output
-, @DefString nvarchar(10) = ''
+, @DefString varchar(10) = ''
 as
 
 select 1
+
 
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
-
 
 create procedure [dbo].[p_MissingUnderscore]
   @Column int
@@ -33,11 +34,38 @@ GO
 SET QUOTED_IDENTIFIER OFF
 GO
 
-
 create procedure [dbo].[p_No_Params]
 as
 
 select 1
+
+GO
+SET ANSI_NULLS OFF
+GO
+SET QUOTED_IDENTIFIER OFF
+GO
+
+create procedure [dbo].[p_Output_NonNull]
+  @Tester smallint output,
+  @String nvarchar(100) output
+as
+
+set @Tester = 5
+set @String = 'Blarggy'
+
+GO
+SET ANSI_NULLS OFF
+GO
+SET QUOTED_IDENTIFIER OFF
+GO
+
+CREATE procedure [dbo].[p_Output_Test]
+  @Output int = null output,
+  @String nvarchar(max) = null output
+as
+
+set @Output = 42
+set @String = 'Marvin'
 
 GO
 SET ANSI_NULLS ON

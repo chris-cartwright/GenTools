@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Mono.Options;
 
 namespace Common
 {
 	public static class Helpers
 	{
-		public static readonly string[] Keywords = new string[]
+		public static readonly string[] Keywords = new[]
 		{
 			 "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default",
 			 "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto",
@@ -52,6 +50,32 @@ namespace Common
             { "timestamp",          typeof(byte[]) }
 		};
 
+		public static readonly Dictionary<string, SqlDbType> SqlTypeMap = new Dictionary<string, SqlDbType>()
+		{
+			{ "nvarchar",			SqlDbType.NVarChar },
+			{ "varchar",			SqlDbType.VarChar },
+			{ "int",				SqlDbType.Int },
+			{ "bigint",				SqlDbType.BigInt },
+			{ "smallint",			SqlDbType.SmallInt },
+			{ "bit",				SqlDbType.Bit },
+			{ "datetime",			SqlDbType.DateTime },
+			{ "money",				SqlDbType.Money },
+			{ "flag",				SqlDbType.Bit },
+			{ "hierarchyid",		SqlDbType.NVarChar },
+			{ "tinyint",			SqlDbType.TinyInt },
+			{ "nchar",				SqlDbType.NChar },
+			{ "char",				SqlDbType.Char },
+			{ "image",				SqlDbType.Image },
+			{ "uniqueidentifier",	SqlDbType.UniqueIdentifier },
+			{ "text",				SqlDbType.Text },
+			{ "decimal",			SqlDbType.Decimal },
+			{ "float",				SqlDbType.Float },
+			{ "varbinary",			SqlDbType.VarBinary },
+			{ "date",				SqlDbType.Date },
+			{ "sysname",			SqlDbType.NVarChar },
+            { "timestamp",          SqlDbType.Timestamp }
+		};
+
 		public static readonly Version Version;
 		public static readonly GitRevisionAttribute Revision;
 		public static readonly string VersionString;
@@ -60,10 +84,7 @@ namespace Common
 
 		static Helpers()
 		{
-			Assembly assembly = Assembly.GetEntryAssembly();
-			if (assembly == null)
-				assembly = Assembly.GetExecutingAssembly();
-
+			Assembly assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
 			AssemblyName assemblyName = assembly.GetName();
 			object[] attributes = assembly.GetCustomAttributes(false);
 
@@ -79,8 +100,8 @@ namespace Common
 		{
 			if (Keywords.Contains(str))
 				return "@" + str;
-			else
-				return str;
+
+			return str;
 		}
 
 		public static string CleanName(this string str)
@@ -99,13 +120,13 @@ namespace Common
 			return ret.CleanKeyword();
 		}
 
-		public static string GetConfig(string[] args)
+		public static string GetConfig(IEnumerable<string> args)
 		{
 			bool help = false;
 			string connection = null;
 			OptionSet options = new OptionSet()
 			{
-				{ "k|name:", "Name of connection string to use.", (string v) => connection = v },
+				{ "k|name:", "Name of connection string to use.", v => connection = v },
 				{ "h|help", "Show this message.", v => help = v != null }
 			};
 
@@ -126,11 +147,18 @@ namespace Common
 			return connection;
 		}
 
-		public static string[] Setup<T>(string[] args, ref T appConfig, out SqlConnection conn, OptionSet opts = null)
+		public static string[] Setup<T>(IEnumerable<string> args, ref T appConfig, out SqlConnection conn, OptionSet opts = null)
+			where T : ConfigurationElementBase
+		{
+			string[] ret = Setup(args, ref appConfig, opts);
+			conn = Connect(appConfig);
+			return ret;
+		}
+
+		public static string[] Setup<T>(IEnumerable<string> args, ref T appConfig, OptionSet opts = null)
+			where T : ConfigurationElementBase
 		{
 			Console.WriteLine("{0} version {1}", AssemblyName, VersionString);
-			
-			conn = null;
 
 			// Convert appConfig to internal class because out/ref parameters cannot be used in lambdas
 			ConfigurationElementBase config = new ConfigurationElementBase();
@@ -142,10 +170,10 @@ namespace Common
 			{
 				{ "v", "Increase verbosity level.", v => verbosity++ },
 				{ "verbosity:", "Verbosity level. 0-4 are supported.", (ushort v) => config.LoggingLevel = (Logger.Level)v },
-				{ "n|namespace:", "Namespace generated code should exist in.", (string v) => config.MasterNamespace = v },
-				{ "c|connection:", "Connection string for database.", (string v) => config.ConnectionString = v },
+				{ "n|namespace:", "Namespace generated code should exist in.", v => config.MasterNamespace = v },
+				{ "c|connection:", "Connection string for database.", v => config.ConnectionString = v },
 				// Swallow name so it doesn't come back as an extra
-				{ "k|name:", "Name of connection string to use.", (string v) => config.Name = v },
+				{ "k|name:", "Name of connection string to use.", v => config.Name = v },
 				{ "h|help", "Show this message.", v => help = v != null }
 			};
 
@@ -177,12 +205,19 @@ namespace Common
 				PrintHelp(options);
 
 			if (verbosity != -1)
-				config.LoggingLevel = (Logger.Level)(++verbosity);
+				config.LoggingLevel = (Logger.Level)verbosity;
 
-			Logger.Current = (Logger.Level)config.LoggingLevel;
+			Logger.Current = config.LoggingLevel;
 			Logger.Debug("Logging level: {0}", Logger.Current);
 
-			string connection = null;
+			config.CopyTo(ref appConfig);
+
+			return extra;
+		}
+
+		public static SqlConnection Connect(ConfigurationElementBase config)
+		{
+			string connection;
 			if (config.Name != null)
 			{
 				if (ConfigurationManager.ConnectionStrings[config.Name] == null)
@@ -197,7 +232,7 @@ namespace Common
 				connection = config.ConnectionString;
 
 			Logger.Info("Using connection: {0}", connection);
-			conn = new SqlConnection(connection);
+			SqlConnection conn = new SqlConnection(connection);
 
 			try
 			{
@@ -209,9 +244,7 @@ namespace Common
 				throw new ReturnException(ReturnCode.ConnectFailed);
 			}
 
-			config.CopyTo(ref appConfig);
-
-			return extra;
+			return conn;
 		}
 
 		public static void PrintHelp(OptionSet opts)

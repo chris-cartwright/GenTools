@@ -3,6 +3,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Data" #>
 <#@ parameter name="procedure" type="GenProc.Procedure"  #>
 <#
 
@@ -59,7 +60,7 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Wher
 
 			protected override void AssignOutputs()
 			{
-				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => p.IsOutput)) { #><#=p.NameClean #> = (<#=p.Type.Name #>)_cmd.Parameters["<#=p.Name #>"].Value;
+				<# foreach(GenProc.Parameter p in procedure.Parameters.Where(p => p.IsOutput)) { #><#=p.NameClean #> = <# if(p.IsNull) { #>_cmd.Parameters["<#=p.Name #>"].Value as <#=p.Type.Name #><# if(p.Type.IsValueType && !p.Type.IsArray){ #>?<# } } else { #>(<#=p.Type.Name #>)_cmd.Parameters["<#=p.Name #>"].Value<# } #>;
 				<# } #>
 			}
 
@@ -71,8 +72,15 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Wher
 				SqlConnection conn = new SqlConnection(ConnectionString);
 				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
 				_cmd.CommandType = CommandType.StoredProcedure;
+                <# if(procedure.Parameters.Count > 0) { #>
 
-				<# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters.AddWithValue("<#=p.Name #>", <#=p.NameClean #>)<# if(p.IsOutput) { #>.Direction = ParameterDirection.Output<# } #>;
-				<# } #>
+                SqlParameter param;
+                <# foreach(GenProc.Parameter p in procedure.Parameters) { #>param = new SqlParameter("<#= p.Name #>", SqlDbType.<#=Enum.GetName(typeof(SqlDbType), p.SqlType) #>);
+                    param.Size = <#=p.Size #>;
+                    <# if(p.IsOutput) { #>param.Direction = ParameterDirection.Output;
+                    <# } #>
+                    _cmd.Parameters.Add(param);
+
+				<# } } #>
 			}
 		}

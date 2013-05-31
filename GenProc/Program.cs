@@ -68,9 +68,11 @@ namespace GenProc
 
 		public string NameClean;
 		public Type Type;
+		public SqlDbType SqlType;
 		public bool IsOutput;
 		public string Default;
 		public bool IsNull;
+		public int Size;
 
 		public Parameter(string name, Type type, bool output, string def)
 		{
@@ -80,9 +82,10 @@ namespace GenProc
 			Default = def;
 		}
 
-		public Parameter(string name, string sqlType, bool output, string def)
+		public Parameter(string name, string sqlType, int size, bool output, string def)
 		{
 			Name = name;
+			Size = size;
 			IsOutput = output;
 			Default = def;
 
@@ -93,6 +96,14 @@ namespace GenProc
 			{
 				Type = typeof(object);
 				Logger.Warn("Could not find type: {0}", sqlType);
+			}
+
+			if (Helpers.SqlTypeMap.ContainsKey(sqlType))
+				SqlType = Helpers.SqlTypeMap[sqlType];
+			else
+			{
+				SqlType = SqlDbType.VarBinary;
+				Logger.Warn("Could not find SQL type: {0}", sqlType);
 			}
 		}
 	}
@@ -270,6 +281,7 @@ namespace GenProc
 					Parameter p = new Parameter(
 						reader["parameter"].ToString(),
 						reader["type"].ToString(),
+						Convert.ToInt32(reader["size"]),
 						Convert.ToBoolean(reader["output"]),
 						reader["value"].ToString().Trim()
 					);

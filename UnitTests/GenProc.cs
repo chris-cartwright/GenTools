@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -147,42 +148,46 @@ namespace UnitTests
 			[Test]
 			public void NotFound()
 			{
-				_p = new global::GenProc.Parameter("Test", "doesn't exist", true, null);
+				_p = new global::GenProc.Parameter("Test", "doesn't exist", 0, true, null);
 				Assert.AreEqual(typeof(object), _p.Type);
 
-				_p = new global::GenProc.Parameter("Test 2", "nvarchar(40)", true, null);
+				_p = new global::GenProc.Parameter("Test 2", "nvarchar(40)", 0, true, null);
 				Assert.AreEqual(typeof(object), _p.Type);
 			}
 
 			[Test]
 			public void Mapping()
 			{
-				_p = new global::GenProc.Parameter("Test 1", "nvarchar", true, null);
+				_p = new global::GenProc.Parameter("Test 1", "nvarchar", 0, true, null);
 				Assert.AreEqual(typeof(string), _p.Type);
+				Assert.AreEqual(SqlDbType.NVarChar, _p.SqlType);
 
-				_p = new global::GenProc.Parameter("Test 2", "int", true, null);
+				_p = new global::GenProc.Parameter("Test 2", "int", 0, true, null);
 				Assert.AreEqual(typeof(int), _p.Type);
+				Assert.AreEqual(SqlDbType.Int, _p.SqlType);
 
-				_p = new global::GenProc.Parameter("Test 3", "flag", true, null);
+				_p = new global::GenProc.Parameter("Test 3", "flag", 0, true, null);
 				Assert.AreEqual(typeof(bool), _p.Type);
+				Assert.AreEqual(SqlDbType.Bit, _p.SqlType);
 
-				_p = new global::GenProc.Parameter("Test 4", "date", true, null);
+				_p = new global::GenProc.Parameter("Test 4", "date", 0, true, null);
 				Assert.AreEqual(typeof(DateTime), _p.Type);
+				Assert.AreEqual(SqlDbType.Date, _p.SqlType);
 			}
 
 			[Test]
 			public void Case()
 			{
-				_p = new global::GenProc.Parameter("Test 1", "date", true, null);
+				_p = new global::GenProc.Parameter("Test 1", "date", 0, true, null);
 				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				_p = new global::GenProc.Parameter("Test 2", "DAte", true, null);
+				_p = new global::GenProc.Parameter("Test 2", "DAte", 0, true, null);
 				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				_p = new global::GenProc.Parameter("Test 3", "Date", true, null);
+				_p = new global::GenProc.Parameter("Test 3", "Date", 0, true, null);
 				Assert.AreEqual(typeof(DateTime), _p.Type);
 
-				_p = new global::GenProc.Parameter("Test 4", "DatE", true, null);
+				_p = new global::GenProc.Parameter("Test 4", "DatE", 0, true, null);
 				Assert.AreEqual(typeof(DateTime), _p.Type);
 			}
 		}
@@ -275,7 +280,7 @@ namespace UnitTests
 		{
 			/* Check loaded tree */
 			Assert.AreEqual(0, _genProc.Procedures.Leaves.Count);
-			Assert.AreEqual(3, _genProc.Procedures.Branches.Count);
+			Assert.AreEqual(4, _genProc.Procedures.Branches.Count);
 
 			Branch<Procedure> brch = _genProc.Procedures.Branches[0];
 			Assert.AreEqual("Completely", brch.Name);
@@ -295,19 +300,26 @@ namespace UnitTests
 			Assert.AreEqual(1, brch.Leaves.Count);
 			Assert.AreEqual("Params", brch.Leaves[0].Name);
 
+			brch = _genProc.Procedures.Branches[3];
+			Assert.AreEqual("Output", brch.Name);
+			Assert.AreEqual(2, brch.Leaves.Count);
+			Assert.AreEqual("NonNull", brch.Leaves[0].Name);
+			Assert.AreEqual("Test", brch.Leaves[1].Name);
+
 			/* Check procedure definitions */
-			Action<global::GenProc.Parameter, string, Type, string, bool, bool> verifyDefault =
-				delegate(global::GenProc.Parameter parameter, string name, Type type, string def, bool isNull, bool isOutput)
+			Action<global::GenProc.Parameter, string, Type, int, string, bool, bool> verifyDefault =
+				delegate(global::GenProc.Parameter parameter, string name, Type type, int size, string def, bool isNull, bool isOutput)
 				{
 					Assert.AreEqual(name, parameter.Name);
 					Assert.AreEqual(type, parameter.Type);
 					Assert.AreEqual(def, parameter.Default);
 					Assert.AreEqual(isNull, parameter.IsNull);
 					Assert.AreEqual(isOutput, parameter.IsOutput);
+					Assert.AreEqual(size, parameter.Size);
 				};
 
-			Action<global::GenProc.Parameter, string, Type, bool, bool> verify =
-				delegate(global::GenProc.Parameter parameter, string name, Type type, bool isNull, bool isOutput)
+			Action<global::GenProc.Parameter, string, Type, int, bool, bool> verify =
+				delegate(global::GenProc.Parameter parameter, string name, Type type, int size, bool isNull, bool isOutput)
 				{
 					Assert.AreEqual(name, parameter.Name);
 					Assert.AreEqual(type, parameter.Type);
@@ -315,21 +327,23 @@ namespace UnitTests
 					Assert.IsNull(parameter.Default);
 					Assert.AreEqual(isNull, parameter.IsNull);
 					Assert.AreEqual(isOutput, parameter.IsOutput);
+					Assert.AreEqual(size, parameter.Size);
 				};
 
 			Procedure proc = _genProc.Procedures.Branches[0].Leaves[0];
 			Assert.AreEqual(7, proc.Parameters.Count);
-			verify(proc.Parameters[0], "@Column", typeof(int), false, false);
-			verifyDefault(proc.Parameters[1], "@Second", typeof(byte), "0", false, false);
-			verify(proc.Parameters[2], "@Third", typeof(string), false, false);
-			verify(proc.Parameters[3], "@Nullable", typeof(int), true, false);
-			verifyDefault(proc.Parameters[4], "@Default", typeof(string), "test default", false, false);
-			verify(proc.Parameters[5], "@Output", typeof(int), true, true);
-			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), "", false, false);
+			verify(proc.Parameters[0], "@Column", typeof(int), 4, false, false);
+			verifyDefault(proc.Parameters[1], "@Second", typeof(byte), 1, "0", false, false);
+			// nvarchar are double-wide; 20 instead of 10
+			verify(proc.Parameters[2], "@Third", typeof(string), 20, false, false);
+			verify(proc.Parameters[3], "@Nullable", typeof(int), 4, true, false);
+			verifyDefault(proc.Parameters[4], "@Default", typeof(string), 100, "test default", false, false);
+			verify(proc.Parameters[5], "@Output", typeof(int), 4, true, true);
+			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), 10, "", false, false);
 
 			proc = _genProc.Procedures.Branches[1].Leaves[3];
 			Assert.AreEqual(1, proc.Parameters.Count);
-			verify(proc.Parameters[0], "@Column", typeof(int), false, false);
+			verify(proc.Parameters[0], "@Column", typeof(int), 4, false, false);
 
 			proc = _genProc.Procedures.Branches[2].Leaves[0];
 			Assert.AreEqual(0, proc.Parameters.Count);
@@ -349,14 +363,16 @@ namespace UnitTests
 		private void Execute()
 		{
 			Type[] types = _assembly.GetExportedTypes();
-			Assert.AreEqual(11, types.Length);
+			Assert.AreEqual(14, types.Length);
 
 			// ReSharper disable JoinDeclarationAndInitializer
 			Type type;
 			ParamInfo[] expected;
+			object inst;
 			// ReSharper restore JoinDeclarationAndInitializer
 
-			/* p_Completely_Valid */
+			#region p_Completely_Valid
+
 			type = types.FirstOrDefault(t => t.FullName == "Procedures.Completely+Valid");
 			Assert.IsNotNull(type);
 
@@ -372,7 +388,21 @@ namespace UnitTests
 			};
 			expected.Apply(type.GetConstructors()[0].GetParameters().OrderBy(p => p.Position), ParamInfo.AreEqual);
 
-			/* p_MissingUnderscore */
+			#region Expose System.InvalidOperationException : the Size property has an invalid size of 0.
+
+			Utilities.SetConnectionString(ref type);
+			inst = type.GetConstructors()[0].Invoke(new object[] { 1, "test", (byte)1, 1, "blarg", "value" });
+			type.GetField("Second").SetValue(inst, (byte)2);
+			type.GetField("Nullable").SetValue(inst, null);
+			type.GetField("DefString").SetValue(inst, "blarg");
+			type.GetMethod("NonQuery").Invoke(inst, new object[] { });
+
+			#endregion
+
+			#endregion
+
+			#region p_MissingUnderscore
+
 			type = types.FirstOrDefault(t => t.FullName == "Procedures.Misc+MissingUnderscore");
 			Assert.IsNotNull(type);
 
@@ -382,10 +412,54 @@ namespace UnitTests
 			};
 			expected.Apply(type.GetConstructors()[0].GetParameters().OrderBy(p => p.Position), ParamInfo.AreEqual);
 
-			/* p_No_Params */
+			#endregion
+
+			#region p_No_Params
+
 			type = types.FirstOrDefault(t => t.FullName == "Procedures.No+Params");
 			Assert.IsNotNull(type);
 			Assert.IsEmpty(type.GetConstructors()[0].GetParameters());
+
+			inst = type.GetConstructors()[0].Invoke(new object[] { });
+			type.GetMethod("NonQuery").Invoke(inst, new object[] { });
+
+			#endregion
+
+			#region p_Output_NonNull
+
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.Output+NonNull");
+			Assert.IsNotNull(type);
+			Assert.IsEmpty(type.GetConstructors()[0].GetParameters());
+
+			#region Expose InvalidCastException
+
+			Utilities.SetConnectionString(ref type);
+			inst = type.GetConstructors()[0].Invoke(new object[] { });
+			type.GetMethod("NonQuery").Invoke(inst, new object[] { });
+			Assert.AreEqual(5, type.GetField("Tester").GetValue(inst));
+			Assert.AreEqual("Blarggy", type.GetField("String").GetValue(inst));
+
+			#endregion
+
+			#endregion
+
+			#region p_Output_Test
+
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.Output+Test");
+			Assert.IsNotNull(type);
+			Assert.IsEmpty(type.GetConstructors()[0].GetParameters());
+
+			#region Expose System.InvalidOperationException : the Size property has an invalid size of 0.
+
+			Utilities.SetConnectionString(ref type);
+			inst = type.GetConstructors()[0].Invoke(new object[] { });
+			type.GetMethod("NonQuery").Invoke(inst, new object[] { });
+			Assert.AreEqual(42, type.GetField("Output").GetValue(inst));
+			Assert.AreEqual("Marvin", type.GetField("String").GetValue(inst));
+
+			#endregion
+
+			#endregion
 		}
 	}
 }

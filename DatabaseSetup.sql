@@ -90,6 +90,8 @@ select
   sp.name as 'procedure',
   p.name as 'parameter',
   t.name as 'type',
+  -- http://msdn.microsoft.com/en-us/library/ms176089.aspx
+  case when p.max_length=-1 then 2147483647 else p.max_length end as 'size',
   p.is_output as 'output',
   dbo.GetParamDefault(p.name, object_definition(sp.object_id)) as 'value'
 from sys.procedures sp

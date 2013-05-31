@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Common;
+using JetBrains.Annotations;
 using NUnit.Framework;
 
 namespace UnitTests
@@ -50,6 +52,27 @@ namespace UnitTests
 			Assert.AreEqual("Connect", copyTo.ConnectionString);
 		}
 
+		[UsedImplicitly]
+		public static IEnumerable<TestCaseData> SetupSource()
+		{
+			yield return new TestCaseData(new[] { "--name=Test" }, new ConfigurationElementBase() { Name = "Test", LoggingLevel = Logger.Level.Error }).Returns(new string[] { });
+			yield return new TestCaseData(new[] { "-v" }, new ConfigurationElementBase() { LoggingLevel = Logger.Level.Error }).Returns(new string[] { });
+			yield return new TestCaseData(new[] { "-vv" }, new ConfigurationElementBase() { LoggingLevel = Logger.Level.Warn }).Returns(new string[] { });
+			yield return new TestCaseData(new[] { "-vvv" }, new ConfigurationElementBase() { LoggingLevel = Logger.Level.Info }).Returns(new string[] { });
+			yield return new TestCaseData(new[] { "-vvvv" }, new ConfigurationElementBase() { LoggingLevel = Logger.Level.Debug }).Returns(new string[] { });
+			yield return new TestCaseData(new[] { "test", "one", "two", "three" }, new ConfigurationElementBase()).Returns(new[] { "test", "one", "two", "three" });
+		}
+
+		[Test]
+		[TestCaseSource("SetupSource")]
+		public string[] Setup(string[] args, ConfigurationElementBase expected)
+		{
+			ConfigurationElementBase test = new ConfigurationElementBase();
+			string[] extra = Helpers.Setup(args, ref test);
+			expected.CompareTo(test, BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+			return extra;
+		}
+
 		[Test]
 		public void OpenWriter()
 		{
@@ -86,7 +109,7 @@ namespace UnitTests
 			Assert.IsFalse(File.Exists(_files["OpenWriter"]));
 		}
 
-		[TearDown]
+		[TestFixtureTearDown]
 		public void TearDown()
 		{
 			foreach (string file in _files.Values.Where(File.Exists))

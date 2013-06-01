@@ -72,15 +72,7 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Wher
 				SqlConnection conn = new SqlConnection(ConnectionString);
 				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
 				_cmd.CommandType = CommandType.StoredProcedure;
-                <# if(procedure.Parameters.Count > 0) { #>
-
-                SqlParameter param;
-                <# foreach(GenProc.Parameter p in procedure.Parameters) { #>param = new SqlParameter("<#= p.Name #>", SqlDbType.<#=Enum.GetName(typeof(SqlDbType), p.SqlType) #>);
-                    param.Size = <#=p.Size #>;
-                    <# if(p.IsOutput) { #>param.Direction = ParameterDirection.Output;
-                    <# } #>
-                    _cmd.Parameters.Add(param);
-
-				<# } } #>
+                <# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters.Add(new SqlParameter("<#= p.Name #>", SqlDbType.<#=Enum.GetName(typeof(SqlDbType), p.SqlType) #>, <#=p.Size #>)<# if(p.IsOutput) { #> { Direction = ParameterDirection.Output }<# } #>);
+				<# } #>
 			}
 		}

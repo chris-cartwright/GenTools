@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using JetBrains.Annotations;
 
 namespace Common
 {
@@ -67,7 +66,7 @@ namespace Common
 		}
 	}
 
-	public class ConfigurationElementCollectionBase<T> : ConfigurationElementCollection
+	public abstract class ConfigurationElementCollectionBase<T> : ConfigurationElementCollection
 		where T : ConfigurationElementBase, new()
 	{
 		protected override ConfigurationElement CreateNewElement()
@@ -98,9 +97,11 @@ namespace Common
 		public ConfigurationElementCollectionBase<T> Instances
 		{
 			get { return (ConfigurationElementCollectionBase<T>)this[""]; }
+			[UsedImplicitly]
 			set { this[""] = value; }
 		}
 
+		[UsedImplicitly]
 		public string[] Keys
 		{
 			get { return Instances.Keys; }

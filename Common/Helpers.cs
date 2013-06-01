@@ -47,7 +47,7 @@ namespace Common
 			{ "varbinary",			typeof(byte[]) },
 			{ "date",				typeof(DateTime) },
 			{ "sysname",			typeof(string) },
-            { "timestamp",          typeof(byte[]) }
+			{ "timestamp",          typeof(byte[]) }
 		};
 
 		public static readonly Dictionary<string, SqlDbType> SqlTypeMap = new Dictionary<string, SqlDbType>()
@@ -73,7 +73,7 @@ namespace Common
 			{ "varbinary",			SqlDbType.VarBinary },
 			{ "date",				SqlDbType.Date },
 			{ "sysname",			SqlDbType.NVarChar },
-            { "timestamp",          SqlDbType.Timestamp }
+			{ "timestamp",          SqlDbType.Timestamp }
 		};
 
 		public static readonly Version Version;

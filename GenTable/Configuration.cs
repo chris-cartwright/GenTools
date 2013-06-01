@@ -1,5 +1,6 @@
 ﻿using System.Configuration;
 using Common;
+using JetBrains.Annotations;
 
 namespace GenTable
 {
@@ -9,6 +10,7 @@ namespace GenTable
 		public string CollisionPostfix
 		{
 			get { return (string)this["CollisionPostfix"]; }
+			[UsedImplicitly]
 			set { this["CollisionPostfix"] = value; }
 		}
 	}

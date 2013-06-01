@@ -4,7 +4,7 @@ using System.IO;
 
 namespace GitVersion
 {
-	class Program
+	static class Program
 	{
 		static int Main(string[] args)
 		{

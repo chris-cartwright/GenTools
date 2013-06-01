@@ -1,5 +1,6 @@
 ﻿using System.Configuration;
 using Common;
+using JetBrains.Annotations;
 
 namespace GenTypes
 {
@@ -9,6 +10,7 @@ namespace GenTypes
 		public string Language
 		{
 			get { return (string)this["Language"]; }
+			[UsedImplicitly]
 			set { this["Language"] = value; }
 		}
 	}

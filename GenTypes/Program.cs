@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using Common;
 using GenTypes.Templates;
+using JetBrains.Annotations;
 
 namespace GenTypes
 {
@@ -46,6 +47,7 @@ namespace GenTypes
 		public static readonly Table None = new Table("");
 
 		public string Name;
+		[UsedImplicitly]
 		public Dictionary<string, object> Data;
 		public List<Column> Columns;
 
@@ -94,6 +96,7 @@ namespace GenTypes
 		private string _name;
 		public string Name
 		{
+			[UsedImplicitly]
 			get { return _name; }
 			set { _name = value; NameClean = value.CleanName(); }
 		}

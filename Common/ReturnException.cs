@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Common
 {
@@ -21,7 +18,6 @@ namespace Common
 		public ReturnCode Code;
 
 		public ReturnException(ReturnCode code)
-			: base()
 		{
 			Code = code;
 		}

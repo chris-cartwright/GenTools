@@ -26,4 +26,17 @@ namespace Tables.Extra
 			return CreateFull(column);
 		}
 	}
+
+	public class Nullable : NullableTypes<Nullable>
+	{
+		public static Nullable Load(short id)
+		{
+			return LoadFull(id);
+		}
+
+		public static object Create(Nullable column)
+		{
+			return CreateFull(column);
+		}
+	}
 }

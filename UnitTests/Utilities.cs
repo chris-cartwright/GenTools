@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
 using Microsoft.CSharp;
 using NUnit.Framework;
 
@@ -65,7 +64,8 @@ namespace UnitTests
 			{
 				WarningLevel = 4,
 				TreatWarningsAsErrors = true,
-				OutputAssembly = file + ".dll"
+				OutputAssembly = file + ".dll",
+				IncludeDebugInformation = true
 			};
 
 			List<string> files = new List<string>() { file };

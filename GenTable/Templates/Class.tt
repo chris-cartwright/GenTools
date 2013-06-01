@@ -103,7 +103,7 @@
 			SqlCommand cmd = new SqlCommand();
 			cmd.Connection = conn;
 			cmd.CommandText = "insert into [<#=table.Name #>](<#=columns #>) values (<#=values #>); select scope_identity()";
-			<# foreach(Column col in table.Columns.Where(c => c.Name != ident.Name)) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #>);
+			<# foreach(Column col in table.Columns.Where(c => c.Name != ident.Name)) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #><# if(col.IsNull) { #> ?? (object)DBNull.Value<# } #>);
 			<# } #>
 
 			try

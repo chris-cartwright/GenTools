@@ -452,25 +452,26 @@ namespace UnitTests
 			Assert.IsFalse((bool)save.InvokeStatic(fail));
 		}
 
+		private void CreateLoad<T>(MethodInfo create, MethodInfo load, string value, T createId)
+		{
+			object row = Activator.CreateInstance(_type);
+			_columns.Value.SetValue(row, value, null);
+			T id = (T)create.InvokeStatic(row);
+			Assert.AreEqual(createId, id);
+
+			row = load.InvokeStatic(id);
+			Assert.IsNotNull(row);
+			Assert.AreEqual(value, _columns.Value.GetValue(row, null));
+		}
+
 		private void CreateFull()
 		{
 			LoadGeneric("Unique", "UniqueID", "Value");
 			MethodInfo create = LoadMethod("Create");
 			MethodInfo load = LoadMethod("Load");
 
-			byte createId = 0;
-
-			Action<string> createLoad = delegate(string value)
-			{
-				object row = Activator.CreateInstance(_type);
-				_columns.Value.SetValue(row, value, null);
-				byte id = (byte)create.InvokeStatic(row);
-				Assert.AreEqual(++createId, id);
-				
-				row = load.InvokeStatic(id);
-				Assert.IsNotNull(row);
-				Assert.AreEqual(value, _columns.Value.GetValue(row, null));
-			};
+			byte uniqueId = 0;
+			Action<string> createLoad = value => CreateLoad(create, load, value, ++uniqueId);
 
 			createLoad("Value");
 			createLoad("Value 2");
@@ -478,6 +479,18 @@ namespace UnitTests
 			object fail = Activator.CreateInstance(_type);
 			_columns.Value.SetValue(fail, "Value", null);
 			Assert.Throws(Has.InnerException.TypeOf<SqlException>(), () => create.InvokeStatic(fail));
+
+			LoadGeneric("Nullable", "NullableID", "Nullable");
+			create = LoadMethod("Create");
+			load = LoadMethod("Load");
+
+			short nullableId = 3;
+			createLoad = value => CreateLoad(create, load, value, ++nullableId);
+			createLoad("Blarg");
+
+			// Expose SqlException : The parameterized query '(@Nullable nvarchar(4000))insert into [NullableTypes]([Nullable]' expects the parameter '@Nullable', which was not supplied.
+			// Which happens when null instead of DBNull is used
+			createLoad(null);
 		}
 
 		private MethodInfo LoadMethod(string name)

@@ -120,8 +120,8 @@ namespace UnitTests
 			Execute();
 			LoadFull();
 			Populate();
-			SaveFull();
 			CreateFull();
+			SaveFull();
 		}
 
 		private void LoadTables()
@@ -424,32 +424,66 @@ namespace UnitTests
 			Assert.Throws(Has.InnerException.TypeOf<ArgumentNullException>(), () => method.Invoke(null, new object[] { null }));
 		}
 
+		private void SaveLoad<T>(MethodInfo save, MethodInfo load, T id, string value)
+		{
+			object row = Activator.CreateInstance(_type);
+			_columns.Id.SetValue(row, id, null);
+			_columns.Value.SetValue(row, value, null);
+			Assert.IsTrue((bool)save.InvokeStatic(row));
+
+			row = load.InvokeStatic(id);
+			Assert.IsNotNull(row);
+			Assert.AreEqual(value, _columns.Value.GetValue(row, null));
+		}
+
 		private void SaveFull()
 		{
+			// ReSharper disable JoinDeclarationAndInitializer
+			Action<string> saveLoad;
+			MethodInfo save;
+			MethodInfo load;
+			object fail;
+			// ReSharper restore JoinDeclarationAndInitializer
+
 			LoadGeneric("BadColumn", "BadColumnID", "DoesntExist");
-			MethodInfo save = LoadMethod("Save");
-			MethodInfo load = LoadMethod("Load");
+			save = LoadMethod("Save");
+			load = LoadMethod("Load");
 
-			Action<int, string> saveLoad = delegate(int id, string value)
-			{
-				object row = Activator.CreateInstance(_type);
-				_columns.Id.SetValue(row, id, null);
-				_columns.Value.SetValue(row, value, null);
-				Assert.IsTrue((bool)save.InvokeStatic(row));
+			SaveLoad(save, load, 1, "Blarg");
+			SaveLoad(save, load, 2, "Blarg 2");
+			SaveLoad(save, load, 3, "");
 
-				row = load.InvokeStatic(id);
-				Assert.IsNotNull(row);
-				Assert.AreEqual(value, _columns.Value.GetValue(row, null));
-			};
-
-			saveLoad(1, "Blarg");
-			saveLoad(2, "Blarg 2");
-			saveLoad(3, "");
-
-			object fail = Activator.CreateInstance(_type);
+			fail = Activator.CreateInstance(_type);
 			_columns.Id.SetValue(fail, 4, null);
 			_columns.Value.SetValue(fail, "This should fail", null);
 			Assert.IsFalse((bool)save.InvokeStatic(fail));
+
+			LoadGeneric("Unique", "UniqueID", "Value");
+			save = LoadMethod("Save");
+			load = LoadMethod("Load");
+
+			byte uniqueId = 0;
+			saveLoad = value => SaveLoad(save, load, ++uniqueId, value);
+			saveLoad("Test value");
+			saveLoad("~!@#$%^&*()_+{}|:\"<>?`[]\\;',./");
+
+			fail = Activator.CreateInstance(_type);
+			_columns.Id.SetValue(fail, (byte)2, null);
+			_columns.Value.SetValue(fail, "Test value", null);
+			Assert.Throws(Utilities.HasSqlException(2601), () => save.InvokeStatic(fail));
+
+			LoadGeneric("Nullable", "NullableID", "Nullable");
+			save = LoadMethod("Save");
+			load = LoadMethod("Load");
+
+			short nullableId = 0;
+			saveLoad = value => SaveLoad(save, load, ++nullableId, value);
+			saveLoad("Another value");
+			saveLoad("Tester");
+
+			// Expose SqlException : The parameterized query '(@NullableID smallint,@Nullable nvarchar(4000))update [NullableT' expects the parameter '@Nullable', which was not supplied.
+			// Which happens when null instead of DBNull is used
+			saveLoad(null);
 		}
 
 		private void CreateLoad<T>(MethodInfo create, MethodInfo load, string value, T createId)
@@ -466,19 +500,24 @@ namespace UnitTests
 
 		private void CreateFull()
 		{
+			// ReSharper disable JoinDeclarationAndInitializer
+			Action<string> createLoad;
+			MethodInfo create;
+			MethodInfo load;
+			// ReSharper restore JoinDeclarationAndInitializer
+
 			LoadGeneric("Unique", "UniqueID", "Value");
-			MethodInfo create = LoadMethod("Create");
-			MethodInfo load = LoadMethod("Load");
+			create = LoadMethod("Create");
+			load = LoadMethod("Load");
 
 			byte uniqueId = 0;
-			Action<string> createLoad = value => CreateLoad(create, load, value, ++uniqueId);
-
+			createLoad = value => CreateLoad(create, load, value, ++uniqueId);
 			createLoad("Value");
 			createLoad("Value 2");
 
 			object fail = Activator.CreateInstance(_type);
 			_columns.Value.SetValue(fail, "Value", null);
-			Assert.Throws(Has.InnerException.TypeOf<SqlException>(), () => create.InvokeStatic(fail));
+			Assert.Throws(Utilities.HasSqlException(2601), () => create.InvokeStatic(fail));
 
 			LoadGeneric("Nullable", "NullableID", "Nullable");
 			create = LoadMethod("Create");

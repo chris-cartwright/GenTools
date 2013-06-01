@@ -70,7 +70,7 @@
 			SqlCommand cmd = new SqlCommand();
 			cmd.Connection = conn;
 			cmd.CommandText = "update [<#=table.Name #>] set <#=columns #> where [<#=ident.Name #>]=@<#=ident.NameClean #>";
-			<# foreach(Column col in table.Columns) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #>);
+			<# foreach(Column col in table.Columns) { #>cmd.Parameters.AddWithValue("@<#=col.NameClean #>", t.<#=col.NameClean #><# if(col.IsNull) { #> ?? (object)DBNull.Value<# } #>);
 			<# } #>
 
 			try

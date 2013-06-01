@@ -25,6 +25,11 @@ namespace Tables.Extra
 		{
 			return CreateFull(column);
 		}
+
+		public static bool Save(Unique column)
+		{
+			return SaveFull(column);
+		}
 	}
 
 	public class Nullable : NullableTypes<Nullable>
@@ -37,6 +42,11 @@ namespace Tables.Extra
 		public static object Create(Nullable column)
 		{
 			return CreateFull(column);
+		}
+
+		public static bool Save(Nullable column)
+		{
+			return SaveFull(column);
 		}
 	}
 }

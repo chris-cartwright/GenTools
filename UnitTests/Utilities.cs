@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.CSharp;
 using NUnit.Framework;
+using NUnit.Framework.Constraints;
 
 namespace UnitTests
 {
@@ -138,6 +140,12 @@ namespace UnitTests
 			FieldInfo field = type.GetField("ConnectionString", BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static);
 			Assert.IsNotNull(field);
 			field.SetValue(null, Scaffold.ConnectionString);
+		}
+
+		public static Constraint HasSqlException(int number)
+		{
+			return Has.InnerException.TypeOf<SqlException>()
+				.And.Matches<Exception>(p => ((SqlException)p.InnerException).Number == number);
 		}
 	}
 

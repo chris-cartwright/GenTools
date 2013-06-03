@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="JetBrains.Annotations">
-      <HintPath>..\UnitTests\bin\Debug\JetBrains.Annotations.dll</HintPath>
+      <HintPath>$(ProgramFiles)\JetBrains\ReSharper\v7.1\Bin\JetBrains.Annotations.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />

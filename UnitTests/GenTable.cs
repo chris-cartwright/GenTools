@@ -141,11 +141,12 @@ namespace UnitTests
 			};
 
 			// ReSharper disable ImplicitlyCapturedClosure
-			Action<string, Column[]> checkTable = delegate(string tableName, Column[] columns)
+			Action<string, bool, Column[]> checkTable = delegate(string tableName, bool hasCollision, Column[] columns)
 			{
 				table = _genTable.Tables[i];
 
 				Assert.AreEqual(tableName, table.Name);
+				Assert.AreEqual(hasCollision, table.HasCollision);
 				Assert.AreEqual(columns.Length, table.Columns.Count);
 				for (int j = 0; j < columns.Length; j++)
 					areEqual(columns[j], table.Columns[j]);
@@ -153,15 +154,16 @@ namespace UnitTests
 				i++;
 			};
 
-			Action<string, Column[], string> checkTableIdent = delegate(string tableName, Column[] columns, string identityName)
+			Action<string, bool, Column[], string> checkTableIdent = delegate(string tableName, bool hasCollision, Column[] columns, string identityName)
 			{
-				checkTable(tableName, columns);
+				checkTable(tableName, hasCollision, columns);
 				Assert.AreEqual(identityName, table.Identity.Name);
 			};
 			// ReSharper restore ImplicitlyCapturedClosure
 
 			checkTableIdent(
 				"BadColumnType",
+				false,
 				new[] {
 					new Column("BadColumnID", typeof(int)) { IsIdentity = true },
 					new Column("DoesntExist", typeof(string))
@@ -171,6 +173,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"DuplicateType",
+				false,
 				new[] {
 					new Column("DuplicateID", typeof(byte)) { IsIdentity = true },
 					new Column("Duplicate", typeof(string))
@@ -180,6 +183,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"EmptyType",
+				false,
 				new[] {
 					new Column("EmptyID", typeof(int)) { IsIdentity = true },
 					new Column("Empty", typeof(string))
@@ -189,6 +193,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"IllegalValueType",
+				false,
 				new[] {
 					new Column("IllegalID", typeof(byte)) { IsIdentity = true },
 					new Column("Illegal", typeof(string))
@@ -198,6 +203,7 @@ namespace UnitTests
 
 			checkTable(
 				"NoIdentityType",
+				false,
 				new[] {
 					new Column("NoIdentityID", typeof(int)),
 					new Column("NoIdentity", typeof(string))
@@ -207,6 +213,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"NullableTypes",
+				false,
 				new[] {
 					new Column("NullableID", typeof(short)) { IsIdentity = true },
 					new Column("Nullable", typeof(string)) { IsNull = true }
@@ -215,8 +222,8 @@ namespace UnitTests
 			);
 
 			checkTableIdent(
-				// Members cannot have the same name as their enclosing type
-				"ShouldntSee_",
+				"ShouldntSee",
+				true,
 				new[] {
 					new Column("ShouldntSeeID", typeof(long)) { IsIdentity = true },
 					new Column("ShouldntSee", typeof(string))
@@ -226,6 +233,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"SingleColumnType",
+				false,
 				new[] {
 					new Column("SingleColumnID", typeof(byte)) { IsIdentity = true }
 				},
@@ -234,6 +242,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"StandardTypes",
+				false,
 				new[] {
 					new Column("StandardID", typeof(short)) { IsIdentity = true },
 					new Column("Standard", typeof(string))
@@ -243,6 +252,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"TinyType",
+				false,
 				new[] {
 					new Column("TinyID", typeof(byte)) { IsIdentity = true },
 					new Column("Tiny", typeof(string))
@@ -252,6 +262,7 @@ namespace UnitTests
 
 			checkTableIdent(
 				"UniqueValues",
+				false,
 				new[] {
 					new Column("UniqueID", typeof(byte)) { IsIdentity = true },
 					new Column("Value", typeof(string))
@@ -260,7 +271,8 @@ namespace UnitTests
 			);
 
 			checkTableIdent(
-				"WrongType_",
+				"WrongType",
+				true,
 				new[] {
 					new Column("WrongTypeID", typeof(short)) { IsIdentity = true },
 					new Column("WrongType", typeof(int))
@@ -484,6 +496,15 @@ namespace UnitTests
 			// Expose SqlException : The parameterized query '(@NullableID smallint,@Nullable nvarchar(4000))update [NullableT' expects the parameter '@Nullable', which was not supplied.
 			// Which happens when null instead of DBNull is used
 			saveLoad(null);
+
+			LoadGeneric("Shouldnt", "ShouldntSeeID", "ShouldntSee");
+			save = LoadMethod("Save");
+			load = LoadMethod("Load");
+
+			long shouldntId = 0;
+			saveLoad = value => SaveLoad(save, load, ++shouldntId, value);
+			// Test to make sure SaveFull ignores possible underscores due to column/table name collision
+			saveLoad("Test");
 		}
 
 		private void CreateLoad<T>(MethodInfo create, MethodInfo load, string value, T createId)
@@ -530,6 +551,15 @@ namespace UnitTests
 			// Expose SqlException : The parameterized query '(@Nullable nvarchar(4000))insert into [NullableTypes]([Nullable]' expects the parameter '@Nullable', which was not supplied.
 			// Which happens when null instead of DBNull is used
 			createLoad(null);
+
+			LoadGeneric("Shouldnt", "ShouldntSeeID", "ShouldntSee");
+			create = LoadMethod("Save");
+			load = LoadMethod("Load");
+
+			long shouldntId = 0;
+			createLoad = value => SaveLoad(create, load, ++shouldntId, value);
+			// Test to make sure createFull ignores possible underscores due to column/table name collision
+			createLoad("Test");
 		}
 
 		private MethodInfo LoadMethod(string name)

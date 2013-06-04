@@ -49,4 +49,22 @@ namespace Tables.Extra
 			return SaveFull(column);
 		}
 	}
+
+	public class Shouldnt : ShouldntSee_<Shouldnt>
+	{
+		public static Shouldnt Load(long id)
+		{
+			return LoadFull(id);
+		}
+
+		public static object Create(Shouldnt column)
+		{
+			return CreateFull(column);
+		}
+
+		public static bool Save(Shouldnt column)
+		{
+			return SaveFull(column);
+		}
+	}
 }

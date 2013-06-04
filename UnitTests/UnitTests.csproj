@@ -88,6 +88,11 @@
   <ItemGroup>
     <Compile Include="Tests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="UnitTests.dll.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy "$(SolutionDir)DatabaseSetup.sql" "$(ProjectDir)\SQL\DatabaseSetup.sql"

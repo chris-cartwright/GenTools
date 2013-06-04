@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
@@ -12,7 +13,9 @@ namespace UnitTests
 	[SetUpFixture]
 	public class Scaffold
 	{
-		public const string ConnectionString = @"Data Source=.\SQLEXPRESS;Integrated Security=True;Database=KnownState";
+		public static string ConnectionString {
+			get { return ConfigurationManager.ConnectionStrings["KnownState"].ConnectionString; }
+		}
 
 		private static readonly Regex Splitter = new Regex("^go", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 		private enum SqlResource { KnownState, Cleanup, DatabaseSetup }
@@ -35,7 +38,7 @@ namespace UnitTests
 				if(cmd.ExecuteNonQuery() == 0)
 				{
 					trans.Rollback();
-					throw new Exception("Could not run SQL: " + res.ToString());
+					throw new Exception("Could not run SQL: " + res);
 				}
 			}
 

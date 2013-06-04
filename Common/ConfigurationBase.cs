@@ -66,7 +66,7 @@ namespace Common
 		}
 	}
 
-	public abstract class ConfigurationElementCollectionBase<T> : ConfigurationElementCollection
+	public class ConfigurationElementCollectionBase<T> : ConfigurationElementCollection
 		where T : ConfigurationElementBase, new()
 	{
 		protected override ConfigurationElement CreateNewElement()

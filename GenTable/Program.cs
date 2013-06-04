@@ -27,8 +27,15 @@ namespace GenTable
 			set { _name = value; NameClean = value.CleanName(); }
 		}
 
-		public string NameClean;
+		private string _nameClean;
+		public string NameClean
+		{
+			get { return HasCollision ? _nameClean + "_" : _nameClean; }
+			set { _nameClean = value; }
+		}
+
 		public List<Column> Columns;
+		public bool HasCollision;
 		public Column Identity
 		{
 			get
@@ -154,7 +161,7 @@ namespace GenTable
 					Column col = new Column(reader["column"].ToString(), reader["type"].ToString(), (bool)reader["nullable"], (bool)reader["identity"]);
 
 					if (col.Name == table.Name)
-						table.Name = table.Name + _settings.CollisionPostfix;
+						table.HasCollision = true;
 
 					table.Columns.Add(col);
 				}

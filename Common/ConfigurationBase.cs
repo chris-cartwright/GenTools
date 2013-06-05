@@ -66,6 +66,7 @@ namespace Common
 		}
 	}
 
+	[UsedImplicitly]
 	public class ConfigurationElementCollectionBase<T> : ConfigurationElementCollection
 		where T : ConfigurationElementBase, new()
 	{

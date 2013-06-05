@@ -16,6 +16,14 @@ namespace UnitTests
 			{ "OpenWriter", Path.Combine(Environment.CurrentDirectory, "Test.readonly") }
 		};
 
+		private class ConfigurationElementTest : ConfigurationElementBase
+		{
+		}
+
+		private class ConfigurationSectionTest : ConfigurationSectionBase<ConfigurationElementTest>
+		{
+		}
+
 		[Test]
 		public void CleanName()
 		{
@@ -71,6 +79,13 @@ namespace UnitTests
 			string[] extra = Helpers.Setup(args, ref test);
 			expected.CompareTo(test, BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
 			return extra;
+		}
+
+		[Test]
+		public void ConfigurationBase()
+		{
+			// Test for ticket #16
+			Assert.IsNotNull(new ConfigurationSectionTest().Instances);
 		}
 
 		[Test]

@@ -1,8 +1,6 @@
 GenTools
 ========
 
----
-
 Loads tables and stored procedures from a MS SQL Server database and generates ADO.NET code in C#.
 
 Description
@@ -62,7 +60,6 @@ Each tool uses a .NET config file to load settings from. A standard set of optio
 | Name             | string | Name of configuration block. Multiple blocks are supported per config file |
 | ConnectionString | string | Name of connection string to use |
 | OutputFile       | string | Full path to output file that will contain the generated code |
-|------------------|--------|---|
 
 All tools require Common.dll to be deployed with them.
 
@@ -72,7 +69,6 @@ All tools require Common.dll to be deployed with them.
 |-----------------|--------|---|
 | CollisionPrefix | string | Prefix added to classes if a collision is found |
 | MiscClass       | string | Class to use for procedures without a namespace |
-|-----------------|--------|---|
 
 #### Requirements
 
@@ -85,7 +81,6 @@ All tools require Common.dll to be deployed with them.
 | Name             | Type   | Description |
 |------------------|--------|---|
 | CollisionPostfix | string | Postfix added to classes if a collision is found |
-|------------------|--------|---|
 
 ### Requirements
 
@@ -97,7 +92,6 @@ All tools require Common.dll to be deployed with them.
 | Name     | Type   | Description |
 |----------|--------|---|
 | Language | string | Language templates to use when generating output |
-|----------|--------|---|
 
 ### Requirements
 

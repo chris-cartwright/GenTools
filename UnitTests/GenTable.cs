@@ -122,6 +122,7 @@ namespace UnitTests
 			Populate();
 			CreateFull();
 			SaveFull();
+			Dirty();
 		}
 
 		private void LoadTables()
@@ -560,6 +561,61 @@ namespace UnitTests
 			createLoad = value => SaveLoad(create, load, ++shouldntId, value);
 			// Test to make sure createFull ignores possible underscores due to column/table name collision
 			createLoad("Test");
+		}
+
+		private void Dirty()
+		{
+			LoadGeneric("Unique", "UniqueID", "Value");
+			MethodInfo save = LoadMethod("Save");
+			MethodInfo load = LoadMethod("Load");
+			MethodInfo create = LoadMethod("Create");
+			MethodInfo populate = LoadMethod("Populate");
+			PropertyInfo dirty = _type.GetProperty("Dirty");
+			PropertyInfo trackChanges = _type.GetProperty("TrackChanges");
+
+			object row = load.InvokeStatic((byte)1);
+			Assert.IsNotNull(row);
+			Assert.AreEqual("Test value", _columns.Value.GetValue(row, null));
+
+			Action isDirty = () => Assert.IsTrue((bool)dirty.GetValue(row, null));
+			Action isClean = () => Assert.IsFalse((bool)dirty.GetValue(row, null));
+
+			Action<bool> track = (t) => trackChanges.SetValue(row, t, null);
+
+			isClean();
+
+			_columns.Value.SetValue(row, "Blarg", null);
+			// TrackChanges defaults to off
+			isClean();
+			Assert.IsTrue((bool)save.InvokeStatic(row));
+			isClean();
+
+			track(true);
+			_columns.Value.SetValue(row, "Blarg 2", null);
+			isDirty();
+			Assert.IsTrue((bool)save.InvokeStatic(row));
+			isClean();
+
+			// Test flipping back and forth
+			track(false);
+			_columns.Value.SetValue(row, "Blarg 3", null);
+			isClean();
+
+			row = Activator.CreateInstance(_type);
+			track(true);
+			_columns.Value.SetValue(row, "Blarg 4", null);
+			Assert.AreEqual(4, (byte)create.InvokeStatic(row));
+
+			row = populate.InvokeStatic(new Dictionary<string, object>()
+			{
+				{"UniqueID", (byte) 10},
+				{"Value", "Blarg 5"}
+			});
+			track(true);
+			isClean();
+
+			_columns.Value.SetValue(row, "Blarg 6", null);
+			isDirty();
 		}
 
 		private MethodInfo LoadMethod(string name)

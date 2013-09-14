@@ -17,6 +17,8 @@
 				ret.<#=col.NameClean #> = <# if(col.IsNull) { #>data["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray){ #>?<# } #><# } else { #>(<#=col.Type.Name #>)data["<#=col.Name #>"]<# } #>;
 			}
 			<# } #>
+
+			ret.Dirty = false;
 			return ret;
 		}
 
@@ -49,6 +51,8 @@
 				T ret = new T();
 				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = <# if(!col.IsNull) { #>(<#=col.Type.Name #>)reader["<#=col.Name #>"]<# } else { #>reader["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray) { #>?<# } } #>;
 				<# } #>
+
+				ret.Dirty = false;
 				return ret;
 			}
 			finally
@@ -76,7 +80,11 @@
 			try
 			{
 				conn.Open();
-				return cmd.ExecuteNonQuery() > 0;
+				bool ret = cmd.ExecuteNonQuery() > 0;
+				if(ret)
+					t.Dirty = false;
+
+				return ret;
 			}
 			finally
 			{
@@ -109,7 +117,9 @@
 			try
 			{
 				conn.Open();
-				return (<#=ident.Type.Name #>)((decimal)cmd.ExecuteScalar());
+				<#=ident.Type.Name #> ret = (<#=ident.Type.Name #>)((decimal)cmd.ExecuteScalar());
+				t.Dirty = false;
+				return ret;
 			}
 			finally
 			{
@@ -119,6 +129,13 @@
 		}
 		<# } #>
 
-		<# foreach(Column col in table.Columns) { #>public <#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #> { get; set; }
+		<# foreach(Column col in table.Columns) { #>private <#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> _<#=col.NameClean #>;
+		<# } #>
+
+		<# foreach(Column col in table.Columns) { #>public <#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #>
+		{
+			get { return _<#=col.NameClean #>; }
+			set { _<#=col.NameClean #> = value; Changed("_<#=col.NameClean #>"); }
+		}
 		<# } #>
 	}

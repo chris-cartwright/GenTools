@@ -1,7 +1,13 @@
-﻿SET ANSI_NULLS OFF
+﻿CREATE TYPE [dbo].[TableType] AS TABLE(
+	[Column1] [int] NULL,
+	[Column2] [nvarchar](max) NULL
+)
+GO
+SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 CREATE procedure [dbo].[p_Completely_Valid]
   @Column int
@@ -16,11 +22,13 @@ as
 select 1
 
 
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 create procedure [dbo].[p_MissingUnderscore]
   @Column int
@@ -28,22 +36,26 @@ as
 
 select 1
 
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 create procedure [dbo].[p_No_Params]
 as
 
 select 1
 
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 create procedure [dbo].[p_Output_NonNull]
   @Tester smallint output,
@@ -53,11 +65,13 @@ as
 set @Tester = 5
 set @String = 'Blarggy'
 
+
 GO
 SET ANSI_NULLS OFF
 GO
 SET QUOTED_IDENTIFIER OFF
 GO
+
 
 CREATE procedure [dbo].[p_Output_Test]
   @Output int = null output,
@@ -66,6 +80,20 @@ as
 
 set @Output = 42
 set @String = 'Marvin'
+
+
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+create procedure [dbo].[p_TableParameter]
+	@Data TableType readonly
+as
+
+insert into NoIdentityType (NoIdentityID, NoIdentity)
+select Column1, Column2 from @Data
 
 GO
 SET ANSI_NULLS ON

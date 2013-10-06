@@ -103,6 +103,24 @@ order by sp.name, p.parameter_id
 
 go
 
+create procedure p_ListUserTableTypes
+as
+
+select
+  tt.name as 'table',
+  c.name as 'column',
+  t.name as 'type',
+  case when c.max_length=-1 then 2147483647 else c.max_length end as 'size',
+  c.is_nullable as 'nullable'
+from sys.table_types tt
+join sys.columns c
+  on c.object_id=tt.type_table_object_id
+left join sys.types t
+  on t.user_type_id=c.user_type_id
+order by tt.name, c.column_id
+
+go
+
 if exists (
   select *
   from sys.objects

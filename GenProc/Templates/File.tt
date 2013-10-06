@@ -7,6 +7,7 @@
 <#@ import namespace="Common" #>
 <#@ parameter name="namespace" type="System.String" #>
 <#@ parameter name="class" type="System.String" #>
+<#@ parameter name="tableTypes" type="System.String" #>
 
 /*
 
@@ -21,5 +22,10 @@ using System.Data.SqlClient;
 
 namespace <#=namespace #>
 {
+	namespace TableTypes
+	{
+<#=tableTypes #>
+	}
+
 <#=class #>
 }

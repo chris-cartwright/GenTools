@@ -580,7 +580,7 @@ namespace UnitTests
 			Action isDirty = () => Assert.IsTrue((bool)dirty.GetValue(row, null));
 			Action isClean = () => Assert.IsFalse((bool)dirty.GetValue(row, null));
 
-			Action<bool> track = (t) => trackChanges.SetValue(row, t, null);
+			Action<bool> track = t => trackChanges.SetValue(row, t, null);
 
 			isClean();
 

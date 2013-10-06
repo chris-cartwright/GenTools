@@ -39,3 +39,21 @@ end
 
 close tbls
 deallocate tbls
+
+-- Delete table types
+declare tts cursor
+for
+	select name
+	from sys.table_types
+
+open tts
+fetch next from tts into @name
+
+while @@fetch_status = 0 begin
+	exec('drop type ' + @name)
+
+	fetch next from tts into @name
+end
+
+close tts
+deallocate tts

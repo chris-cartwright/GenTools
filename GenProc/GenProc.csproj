@@ -61,11 +61,20 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Function.tt</DependentUpon>
     </Compile>
+    <Compile Include="Templates\TableType.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TableType.tt</DependentUpon>
+    </Compile>
     <None Include="Templates\Class.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>Class.cs</LastGenOutput>
     </None>
     <Compile Include="Templates\Files\WrappedProcedure.cs" />
+    <None Include="Templates\TableType.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>TableType.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

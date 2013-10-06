@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using JetBrains.Annotations;
 using Microsoft.CSharp;
 using NUnit.Framework;
 using NUnit.Framework.Constraints;
@@ -17,7 +18,7 @@ namespace UnitTests
 	{
 		public enum Include { GenProc, GenTable };
 
-		private static readonly string[] Assemblies = new[]
+		private static readonly string[] Assemblies =
 		{
 			"mscorlib.dll",
 			"System.dll",
@@ -69,6 +70,8 @@ namespace UnitTests
 				OutputAssembly = file + ".dll",
 				IncludeDebugInformation = true
 			};
+
+			ps.ReferencedAssemblies.Add("System.Xml.dll");
 
 			List<string> files = new List<string>() { file };
 
@@ -151,7 +154,7 @@ namespace UnitTests
 
 	public class OrderedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
 	{
-		private List<TKey> _keys;
+		private readonly List<TKey> _keys;
 
 		public new TKey[] Keys
 		{
@@ -168,13 +171,9 @@ namespace UnitTests
 			return _keys.Select(key => new KeyValuePair<TKey, TValue>(key, base[key])).GetEnumerator();
 		}
 
-		public new void Add(TKey key, TValue value)
-		{
-			base[key] = value;
-		}
-
 		public new TValue this[TKey key]
 		{
+			[UsedImplicitly]
 			get { return base[key]; }
 			set
 			{

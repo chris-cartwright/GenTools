@@ -141,54 +141,57 @@ namespace UnitTests
 		}
 
 		[TestFixture]
-		public class Parameter
+		public class CustomTypeTests
 		{
-			private global::GenProc.Parameter _p;
-
 			[Test]
-			public void NotFound()
+			public void Constructor()
 			{
-				_p = new global::GenProc.Parameter("Test", "doesn't exist", 0, true, null);
-				Assert.AreEqual(typeof(object), _p.Type);
+				// ReSharper disable once JoinDeclarationAndInitializer
+				CustomType type;
 
-				_p = new global::GenProc.Parameter("Test 2", "nvarchar(40)", 0, true, null);
-				Assert.AreEqual(typeof(object), _p.Type);
+				type = new CustomType("TableType");
+				Assert.AreEqual("TableType", type.Name);
+				Assert.IsFalse(type.IsValueType);
+				Assert.IsTrue(type.IsArray);
+				Assert.IsTrue(type.IsTable);
+
+				type = new CustomType(typeof(string));
+				Assert.AreEqual("String", type.Name);
+				Assert.IsFalse(type.IsValueType);
+				Assert.IsFalse(type.IsArray);
+				Assert.IsFalse(type.IsTable);
+			}
+
+			public static IEnumerable<TestCaseData> EqualSource()
+			{
+				yield return new TestCaseData(typeof(string));
+				yield return new TestCaseData(typeof(int));
+				yield return new TestCaseData(typeof(DateTime));
+				yield return new TestCaseData(typeof(long?));
 			}
 
 			[Test]
-			public void Mapping()
+			[TestCaseSource("EqualSource")]
+			public void Equal(Type type)
 			{
-				_p = new global::GenProc.Parameter("Test 1", "nvarchar", 0, true, null);
-				Assert.AreEqual(typeof(string), _p.Type);
-				Assert.AreEqual(SqlDbType.NVarChar, _p.SqlType);
+				Assert.IsTrue(new CustomType(type) == type);
+				Assert.IsFalse(new CustomType(type) != type);
+			}
 
-				_p = new global::GenProc.Parameter("Test 2", "int", 0, true, null);
-				Assert.AreEqual(typeof(int), _p.Type);
-				Assert.AreEqual(SqlDbType.Int, _p.SqlType);
-
-				_p = new global::GenProc.Parameter("Test 3", "flag", 0, true, null);
-				Assert.AreEqual(typeof(bool), _p.Type);
-				Assert.AreEqual(SqlDbType.Bit, _p.SqlType);
-
-				_p = new global::GenProc.Parameter("Test 4", "date", 0, true, null);
-				Assert.AreEqual(typeof(DateTime), _p.Type);
-				Assert.AreEqual(SqlDbType.Date, _p.SqlType);
+			public static IEnumerable<TestCaseData> NotEqualSource()
+			{
+				yield return new TestCaseData(typeof(int), typeof(string));
+				yield return new TestCaseData(typeof(string), typeof(int));
+				yield return new TestCaseData(typeof(int), typeof(DateTime));
+				yield return new TestCaseData(typeof(long?), typeof(int?));
 			}
 
 			[Test]
-			public void Case()
+			[TestCaseSource("NotEqualSource")]
+			public void NotEqual(Type lhs, Type rhs)
 			{
-				_p = new global::GenProc.Parameter("Test 1", "date", 0, true, null);
-				Assert.AreEqual(typeof(DateTime), _p.Type);
-
-				_p = new global::GenProc.Parameter("Test 2", "DAte", 0, true, null);
-				Assert.AreEqual(typeof(DateTime), _p.Type);
-
-				_p = new global::GenProc.Parameter("Test 3", "Date", 0, true, null);
-				Assert.AreEqual(typeof(DateTime), _p.Type);
-
-				_p = new global::GenProc.Parameter("Test 4", "DatE", 0, true, null);
-				Assert.AreEqual(typeof(DateTime), _p.Type);
+				Assert.IsFalse(new CustomType(lhs) == rhs);
+				Assert.IsTrue(new CustomType(lhs) != rhs);
 			}
 		}
 
@@ -202,6 +205,7 @@ namespace UnitTests
 			_genProc = new Program(new Configuration() { OutputFile = _files["GenProc"], Monolithic = true });
 
 			conn.Open();
+			_genProc.LoadTableTypes(conn);
 			_genProc.LoadProcedures(conn);
 			conn.Close();
 
@@ -268,6 +272,45 @@ namespace UnitTests
 		}
 
 		[Test]
+		public void NotFound()
+		{
+			Assert.AreEqual(new CustomType(typeof(object)), _genProc.ResolveType("doesn't exist"));
+			Assert.AreEqual(new CustomType(typeof(object)), _genProc.ResolveType("nvarchar(40)"));
+		}
+
+		public static IEnumerable<TestCaseData> MappingSource()
+		{
+			yield return new TestCaseData("nvarchar", typeof(string), SqlDbType.NVarChar);
+			yield return new TestCaseData("int", typeof(int), SqlDbType.Int);
+			yield return new TestCaseData("flag", typeof(bool), SqlDbType.Bit);
+			yield return new TestCaseData("date", typeof(DateTime), SqlDbType.Date);
+		}
+
+		[Test]
+		[TestCaseSource("MappingSource")]
+		public void Mapping(string stringType, Type type, SqlDbType sqlType)
+		{
+			Assert.AreEqual(new CustomType(type), _genProc.ResolveType(stringType));
+			Assert.AreEqual(sqlType, _genProc.ResolveSqlType(stringType));
+		}
+
+		public static IEnumerable<TestCaseData> CaseSource()
+		{
+			yield return new TestCaseData("date", typeof(DateTime));
+			yield return new TestCaseData("DAte", typeof(DateTime));
+			yield return new TestCaseData("Date", typeof(DateTime));
+			yield return new TestCaseData("DatE", typeof(DateTime));
+			yield return new TestCaseData("DATE", typeof(DateTime));
+		}
+
+		[Test]
+		[TestCaseSource("CaseSource")]
+		public void Case(string stringType, Type type)
+		{
+			Assert.AreEqual(new CustomType(type), _genProc.ResolveType(stringType));
+		}
+
+		[Test]
 		public void CompileExecute()
 		{
 			LoadProcedures();
@@ -289,11 +332,13 @@ namespace UnitTests
 
 			brch = _genProc.Procedures.Branches[1];
 			Assert.AreEqual("Misc", brch.Name);
-			Assert.AreEqual(4, brch.Leaves.Count);
+			Assert.AreEqual(6, brch.Leaves.Count);
 			Assert.AreEqual("ListProcedures", brch.Leaves[0].Name);
 			Assert.AreEqual("ListTables", brch.Leaves[1].Name);
 			Assert.AreEqual("ListTypeTables", brch.Leaves[2].Name);
-			Assert.AreEqual("MissingUnderscore", brch.Leaves[3].Name);
+			Assert.AreEqual("ListUserTableTypes", brch.Leaves[3].Name);
+			Assert.AreEqual("MissingUnderscore", brch.Leaves[4].Name);
+			Assert.AreEqual("TableParameter", brch.Leaves[5].Name);
 
 			brch = _genProc.Procedures.Branches[2];
 			Assert.AreEqual("No", brch.Name);
@@ -307,22 +352,22 @@ namespace UnitTests
 			Assert.AreEqual("Test", brch.Leaves[1].Name);
 
 			/* Check procedure definitions */
-			Action<global::GenProc.Parameter, string, Type, int, string, bool, bool> verifyDefault =
-				delegate(global::GenProc.Parameter parameter, string name, Type type, int size, string def, bool isNull, bool isOutput)
+			Action<Parameter, string, Type, int, string, bool, bool> verifyDefault =
+				delegate(Parameter parameter, string name, Type type, int size, string def, bool isNull, bool isOutput)
 				{
 					Assert.AreEqual(name, parameter.Name);
-					Assert.AreEqual(type, parameter.Type);
+					Assert.AreEqual(new CustomType(type), parameter.Type);
 					Assert.AreEqual(def, parameter.Default);
 					Assert.AreEqual(isNull, parameter.IsNull);
 					Assert.AreEqual(isOutput, parameter.IsOutput);
 					Assert.AreEqual(size, parameter.Size);
 				};
 
-			Action<global::GenProc.Parameter, string, Type, int, bool, bool> verify =
-				delegate(global::GenProc.Parameter parameter, string name, Type type, int size, bool isNull, bool isOutput)
+			Action<Parameter, string, Type, int, bool, bool> verify =
+				delegate(Parameter parameter, string name, Type type, int size, bool isNull, bool isOutput)
 				{
 					Assert.AreEqual(name, parameter.Name);
-					Assert.AreEqual(type, parameter.Type);
+					Assert.AreEqual(new CustomType(type), parameter.Type);
 					// Only IsNull - an empty string is legitimate
 					Assert.IsNull(parameter.Default);
 					Assert.AreEqual(isNull, parameter.IsNull);
@@ -341,7 +386,7 @@ namespace UnitTests
 			verify(proc.Parameters[5], "@Output", typeof(int), 4, true, true);
 			verifyDefault(proc.Parameters[6], "@DefString", typeof(string), 10, "", false, false);
 
-			proc = _genProc.Procedures.Branches[1].Leaves[3];
+			proc = _genProc.Procedures.Branches[1].Leaves[4];
 			Assert.AreEqual(1, proc.Parameters.Count);
 			verify(proc.Parameters[0], "@Column", typeof(int), 4, false, false);
 
@@ -363,7 +408,7 @@ namespace UnitTests
 		private void Execute()
 		{
 			Type[] types = _assembly.GetExportedTypes();
-			Assert.AreEqual(14, types.Length);
+			Assert.AreEqual(17, types.Length);
 
 			// ReSharper disable JoinDeclarationAndInitializer
 			Type type;
@@ -458,6 +503,71 @@ namespace UnitTests
 			Assert.AreEqual("Marvin", type.GetField("String").GetValue(inst));
 
 			#endregion
+
+			#endregion
+
+			#region p_TableParameter
+
+			type = types.FirstOrDefault(t => t.FullName == "Procedures.Misc+TableParameter");
+			Assert.IsNotNull(type);
+
+			Utilities.SetConnectionString(ref type);
+
+			Type tt = types.FirstOrDefault(t => t.FullName == "Procedures.TableTypes.TableType");
+			Assert.IsNotNull(tt);
+
+			PropertyInfo column1 = tt.GetProperty("Column1");
+			Assert.IsNotNull(column1);
+
+			PropertyInfo column2 = tt.GetProperty("Column2");
+			Assert.IsNotNull(column2);
+
+			Array @params = Array.CreateInstance(tt, 2);
+			object first = Activator.CreateInstance(tt);
+			object second = Activator.CreateInstance(tt);
+
+			column1.SetValue(first, 7, null);
+			column2.SetValue(first, "Test", null);
+			column1.SetValue(second, 8, null);
+			column2.SetValue(second, "Test 2", null);
+
+			@params.SetValue(first, 0);
+			@params.SetValue(second, 1);
+
+			object proc = Activator.CreateInstance(type, @params);
+			type.GetMethod("NonQuery").Invoke(proc, new object[] { });
+
+			SqlConnection conn = new SqlConnection(Scaffold.ConnectionString);
+			SqlCommand cmd = new SqlCommand("select * from NoIdentityType where NoIdentityID in (7, 8)", conn);
+
+			try
+			{
+				conn.Open();
+				SqlDataReader reader = cmd.ExecuteReader();
+				Assert.IsTrue(reader.HasRows);
+
+				while (reader.Read())
+				{
+					switch ((int)reader["NoIdentityID"])
+					{
+					case 7:
+						Assert.AreEqual("Test", reader["NoIdentity"]);
+						break;
+
+					case 8:
+						Assert.AreEqual("Test 2", reader["NoIdentity"]);
+						break;
+
+					default:
+						Assert.Fail("Unkown data received");
+						break;
+					}
+				}
+			}
+			finally
+			{
+				conn.Close();
+			}
 
 			#endregion
 		}

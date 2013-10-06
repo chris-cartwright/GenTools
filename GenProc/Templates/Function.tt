@@ -12,10 +12,16 @@
 
 Func<GenProc.Parameter, StringBuilder, StringBuilder> GenParam = delegate(GenProc.Parameter p, StringBuilder sbp)
 {
+	if(p.Type.IsTable)
+		sbp.Append("TableTypes.");
+
 	sbp.Append(p.Type.Name);
 	if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray)
 		sbp.Append("?");
-	
+
+	if(p.Type.IsArray)
+		sbp.Append("[]");
+
 	sbp.Append(" ").Append(p.NameClean);
 
 	if(p.IsNull)
@@ -49,12 +55,12 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Wher
 #>
 		public class <#=procedure.NameClean #> : WrappedProcedure
 		{
-			<# foreach(GenProc.Parameter p in procedure.Parameters) { #>public <#=p.Type.Name #><# if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray) { #>?<# } #> <#=p.NameClean #>;
+			<# foreach(GenProc.Parameter p in procedure.Parameters) { #>public <# if(p.Type.IsTable) { #>TableTypes.<# } #><#=p.Type.Name #><# if(p.IsNull && p.Type.IsValueType && !p.Type.IsArray) { #>?<# } else if(p.Type.IsTable) { #>[]<# } #> <#=p.NameClean #>;
 			<# } #>
 
 			protected override void AssignInputs()
 			{
-				<# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters["<#=p.Name #>"].Value = <#=p.NameClean #>;
+				<# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters["<#=p.Name #>"].Value = <# if(p.Type.IsTable) { #>TableTypes.<#=p.Type.Name #>.ToDataTable(<# } #><#=p.NameClean #><# if(p.Type.IsTable) { #>)<# } #>;
 				<# } #>
 			}
 
@@ -72,7 +78,7 @@ foreach(GenProc.Parameter p in procedure.Parameters.Where(p => !p.IsOutput).Wher
 				SqlConnection conn = new SqlConnection(ConnectionString);
 				_cmd = new SqlCommand("<#=procedure.Original #>", conn);
 				_cmd.CommandType = CommandType.StoredProcedure;
-                <# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters.Add(new SqlParameter("<#= p.Name #>", SqlDbType.<#=Enum.GetName(typeof(SqlDbType), p.SqlType) #>, <#=p.Size #>)<# if(p.IsOutput) { #> { Direction = ParameterDirection.Output }<# } #>);
+                <# foreach(GenProc.Parameter p in procedure.Parameters) { #>_cmd.Parameters.Add(new SqlParameter("<#= p.Name #>", SqlDbType.<#=p.SqlType #>, <#=p.Size #>)<# if(p.IsOutput) { #> { Direction = ParameterDirection.Output }<# } #>);
 				<# } #>
 			}
 		}

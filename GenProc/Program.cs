@@ -6,12 +6,92 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Common;
 using Mono.Options;
 
 namespace GenProc
 {
+	public class CustomType
+	{
+		private readonly Type _type;
+
+		public string Name { get; private set; }
+		public bool IsValueType { get; private set; }
+		public bool IsArray { get; private set; }
+		public bool IsTable { get; private set; }
+
+		//public static implicit operator CustomType(Type type)
+		//{
+		//	return new CustomType(type);
+		//}
+
+		public static bool operator ==(CustomType lhs, Type rhs)
+		{
+			return lhs._type == rhs;
+		}
+
+		public static bool operator !=(CustomType lhs, Type rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		protected bool Equals(CustomType other)
+		{
+			return _type == other._type && string.Equals(Name, other.Name) && IsValueType.Equals(other.IsValueType) && IsArray.Equals(other.IsArray);
+		}
+
+		/// <summary>
+		/// Constructs a table type
+		/// </summary>
+		/// <param name="name">Name of user table type</param>
+		public CustomType(string name)
+		{
+			if (name == null)
+				throw new ArgumentNullException("name");
+
+			Name = name;
+			IsValueType = false;
+			IsArray = true;
+			IsTable = true;
+		}
+
+		public CustomType(Type type)
+		{
+			_type = type;
+			Name = type.Name;
+			IsValueType = type.IsValueType;
+			IsArray = type.IsArray;
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (ReferenceEquals(null, obj))
+				return false;
+
+			if (ReferenceEquals(this, obj))
+				return true;
+
+			if (obj.GetType() != GetType())
+				return false;
+
+			return Equals((CustomType)obj);
+		}
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				int hashCode = (_type != null ? _type.GetHashCode() : 0);
+				hashCode = (hashCode * 397) ^ Name.GetHashCode();
+				hashCode = (hashCode * 397) ^ IsValueType.GetHashCode();
+				hashCode = (hashCode * 397) ^ IsArray.GetHashCode();
+				return hashCode;
+			}
+		}
+	}
+
 	public class Branch<T>
 	{
 		private static Branch<T> Resolve(Branch<T> branch, string[] parts)
@@ -57,58 +137,55 @@ namespace GenProc
 		}
 	}
 
-	public class Parameter
+	public abstract class Entity
 	{
 		private string _name;
+
 		public string Name
 		{
 			get { return _name; }
-			set { _name = value; NameClean = value.CleanName(); }
+			set
+			{
+				_name = value;
+				NameClean = value.CleanName();
+			}
 		}
 
 		public string NameClean;
-		public Type Type;
+	}
+
+	public class Column : Entity
+	{
+		public CustomType Type;
 		public SqlDbType SqlType;
-		public bool IsOutput;
-		public string Default;
 		public bool IsNull;
 		public int Size;
 
-		public Parameter(string name, Type type, bool output, string def)
+		public Column(string name, CustomType type, SqlDbType sqlType, bool isNull, int size)
 		{
+			IsNull = isNull;
+			Size = size;
 			Name = name;
 			Type = type;
-			IsOutput = output;
-			Default = def;
-		}
-
-		public Parameter(string name, string sqlType, int size, bool output, string def)
-		{
-			Name = name;
-			Size = size;
-			IsOutput = output;
-			Default = def;
-
-			sqlType = sqlType.ToLower();
-			if (Helpers.TypeMap.ContainsKey(sqlType))
-				Type = Helpers.TypeMap[sqlType];
-			else
-			{
-				Type = typeof(object);
-				Logger.Warn("Could not find type: {0}", sqlType);
-			}
-
-			if (Helpers.SqlTypeMap.ContainsKey(sqlType))
-				SqlType = Helpers.SqlTypeMap[sqlType];
-			else
-			{
-				SqlType = SqlDbType.VarBinary;
-				Logger.Warn("Could not find SQL type: {0}", sqlType);
-			}
+			SqlType = sqlType;
 		}
 	}
 
-	public class Procedure
+	public class Parameter : Column
+	{
+		public bool IsOutput;
+		public string Default;
+
+		public Parameter(string name, CustomType type, SqlDbType sqlType, int size, bool output, string def)
+			: base(name, type, sqlType, false, size)
+		{
+			Size = size;
+			IsOutput = output;
+			Default = def;
+		}
+	}
+
+	public class Procedure : Entity
 	{
 		public static readonly Procedure None;
 
@@ -118,15 +195,7 @@ namespace GenProc
 			None = new Procedure();
 		}
 
-		private string _name;
-		public string Name
-		{
-			get { return _name; }
-			set { _name = value; NameClean = value.CleanName(); }
-		}
-
 		public string[] Path;
-		public string NameClean;
 		public string Original;
 		public List<Parameter> Parameters;
 
@@ -139,6 +208,26 @@ namespace GenProc
 			Original = full;
 			Name = name;
 			Path = path;
+		}
+	}
+
+	public class TableType : Entity
+	{
+		public static readonly TableType None;
+
+		static TableType()
+		{
+			None = new TableType();
+		}
+
+		public List<Column> Columns;
+
+		private TableType() { }
+
+		public TableType(string name)
+		{
+			Name = name;
+			Columns = new List<Column>();
 		}
 	}
 
@@ -174,6 +263,7 @@ namespace GenProc
 				Stopwatch sw = new Stopwatch();
 				sw.Start();
 
+				prog.LoadTableTypes(conn);
 				prog.LoadProcedures(conn);
 				prog.Write();
 
@@ -193,13 +283,44 @@ namespace GenProc
 			return (int)ReturnCode.Success;
 		}
 
-		private Configuration _settings;
+		private readonly Configuration _settings;
 
 		public Branch<Procedure> Procedures;
+		public List<TableType> TableTypes;
 
 		public Program(Configuration settings)
 		{
 			_settings = settings;
+		}
+
+		public CustomType ResolveType(string sqlType)
+		{
+			sqlType = sqlType.ToLower();
+			TableType tableType = TableTypes.FirstOrDefault(tt => tt.Name.ToLower() == sqlType);
+
+			if (Helpers.TypeMap.ContainsKey(sqlType))
+				return new CustomType(Helpers.TypeMap[sqlType]);
+
+			if (tableType != null)
+				return new CustomType(tableType.Name);
+
+			Logger.Warn("Could not find type: {0}", sqlType);
+			return new CustomType(typeof(object));
+		}
+
+		public SqlDbType ResolveSqlType(string sqlType)
+		{
+			sqlType = sqlType.ToLower();
+			TableType tableType = TableTypes.FirstOrDefault(tt => tt.Name.ToLower() == sqlType);
+
+			if (Helpers.SqlTypeMap.ContainsKey(sqlType))
+				return Helpers.SqlTypeMap[sqlType];
+
+			if (tableType != null)
+				return SqlDbType.Structured;
+
+			Logger.Warn("Could not find SQL type: {0}", sqlType);
+			return SqlDbType.VarBinary;
 		}
 
 		public Procedure Parse(string full)
@@ -232,9 +353,19 @@ namespace GenProc
 				StringWriter str = new StringWriter();
 				WriteCodeMonolithic(str, Procedures, true);
 
+				StringBuilder tableTypes = new StringBuilder();
+				foreach (TableType tableType in TableTypes)
+				{
+					Templates.TableType tt = new Templates.TableType() { Session = new Dictionary<string, object>() };
+					tt.Session["tableType"] = tableType;
+					tt.Initialize();
+					tableTypes.Append(tt.TransformText());
+				}
+
 				Templates.File f = new Templates.File() { Session = new Dictionary<string, object>() };
 				f.Session["namespace"] = _settings.MasterNamespace;
 				f.Session["class"] = str.ToString();
+				f.Session["tableTypes"] = tableTypes.ToString();
 				f.Initialize();
 
 				StreamWriter writer = Helpers.OpenWriter(_settings.OutputFile);
@@ -280,7 +411,8 @@ namespace GenProc
 
 					Parameter p = new Parameter(
 						reader["parameter"].ToString(),
-						reader["type"].ToString(),
+						ResolveType(reader["type"].ToString()),
+						ResolveSqlType(reader["type"].ToString()),
 						Convert.ToInt32(reader["size"]),
 						Convert.ToBoolean(reader["output"]),
 						reader["value"].ToString().Trim()
@@ -292,9 +424,9 @@ namespace GenProc
 							p.IsNull = true;
 							p.Default = null;
 						}
-						else if (p.Type == typeof (string))
+						else if (p.Type == typeof(string))
 							p.Default = p.Default.Trim('\'');
-						else if (p.Type == typeof (bool))
+						else if (p.Type == typeof(bool))
 							p.Default = p.Default == "0" ? "false" : "true";
 					}
 					else
@@ -310,6 +442,8 @@ namespace GenProc
 					proc.Parameters.Add(p);
 				}
 
+				reader.Close();
+
 				// Add last procedure
 				if (proc != Procedure.None)
 					Procedures.Insert(proc.Path, proc);
@@ -323,6 +457,55 @@ namespace GenProc
 			sw.Stop();
 			Logger.Info("Done database stuff: {0}", sw.Elapsed);
 			Logger.Debug("Time spent inserting: {0}", inserts);
+		}
+
+		public void LoadTableTypes(SqlConnection conn)
+		{
+			TableTypes = new List<TableType>();
+
+			SqlCommand cmd = new SqlCommand("p_ListUserTableTypes", conn) { CommandType = CommandType.StoredProcedure };
+
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
+
+			try
+			{
+				SqlDataReader reader = cmd.ExecuteReader();
+				TableType tableType = TableType.None;
+				while (reader.Read())
+				{
+					string typeName = reader["table"].ToString();
+					if (typeName != tableType.Name)
+					{
+						if (tableType != TableType.None)
+							TableTypes.Add(tableType);
+
+						tableType = new TableType(typeName);
+					}
+
+					tableType.Columns.Add(new Column(
+						reader["column"].ToString(),
+						ResolveType(reader["type"].ToString()),
+						ResolveSqlType(reader["type"].ToString()),
+						Convert.ToBoolean(reader["nullable"]),
+						Convert.ToInt32(reader["size"])
+					));
+				}
+
+				reader.Close();
+
+				// Add last table type
+				if (tableType != TableType.None)
+					TableTypes.Add(tableType);
+			}
+			catch (Exception ex)
+			{
+				Logger.Error("Error parsing data: {0}", ex.Message);
+				throw new ReturnException(ReturnCode.ParseError);
+			}
+
+			sw.Stop();
+			Logger.Info("Done database stuff: {0}", sw.Elapsed);
 		}
 
 		private void WriteCodeMulti(Branch<Procedure> branch, string path, string node)

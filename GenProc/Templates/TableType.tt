@@ -1,0 +1,25 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ parameter name="tableType" type="GenProc.TableType" #>
+		public class <#=tableType.NameClean #>
+		{
+			public static DataTable ToDataTable(<#=tableType.NameClean #>[] data)
+			{
+				DataTable dt = new DataTable();
+				<# foreach(Column c in tableType.Columns) { #>dt.Columns.Add("<#=c.Name #>", typeof(<#=c.Type.Name #>));
+				<# } #>
+
+				foreach(<#=tableType.NameClean #> row in data)
+				{
+					dt.Rows.Add(row.<#=String.Join(", row.", tableType.Columns.Select(c => c.NameClean)) #>);
+				}
+
+				return dt;
+			}
+
+			<# foreach(Column c in tableType.Columns) { #>public <#=c.Type.Name #><# if(c.IsNull && c.Type.IsValueType && !c.Type.IsArray) { #>?<# } #> <#=c.NameClean #> { get; set; }
+			<# } #>
+		}

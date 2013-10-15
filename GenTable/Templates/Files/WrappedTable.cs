@@ -10,7 +10,7 @@ namespace Tables
 
 		private bool _trackChanges;
 
-		public bool Dirty { get; protected set; }
+		public bool IsDirty { get; protected set; }
 		public bool TrackChanges
 		{
 			get { return _trackChanges; }
@@ -29,7 +29,7 @@ namespace Tables
 
 		private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
-			Dirty = true;
+			IsDirty = true;
 		}
 
 		protected void Changed(string property)

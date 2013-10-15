@@ -570,7 +570,7 @@ namespace UnitTests
 			MethodInfo load = LoadMethod("Load");
 			MethodInfo create = LoadMethod("Create");
 			MethodInfo populate = LoadMethod("Populate");
-			PropertyInfo dirty = _type.GetProperty("Dirty");
+			PropertyInfo dirty = _type.GetProperty("IsDirty");
 			PropertyInfo trackChanges = _type.GetProperty("TrackChanges");
 
 			object row = load.InvokeStatic((byte)1);

@@ -4,6 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="table" type="GenTable.Table" #>
+	[Serializable]
 	public abstract class <#=table.NameClean #><T> : WrappedTable where T : <#=table.NameClean #><T>, new()
 	{
 		public static T Populate(Dictionary<string, object> data)
@@ -18,7 +19,7 @@
 			}
 			<# } #>
 
-			ret.Dirty = false;
+			ret.IsDirty = false;
 			return ret;
 		}
 
@@ -52,7 +53,7 @@
 				<# foreach(Column col in table.Columns) { #>ret.<#=col.NameClean #> = <# if(!col.IsNull) { #>(<#=col.Type.Name #>)reader["<#=col.Name #>"]<# } else { #>reader["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray) { #>?<# } } #>;
 				<# } #>
 
-				ret.Dirty = false;
+				ret.IsDirty = false;
 				return ret;
 			}
 			finally
@@ -82,7 +83,7 @@
 				conn.Open();
 				bool ret = cmd.ExecuteNonQuery() > 0;
 				if(ret)
-					t.Dirty = false;
+					t.IsDirty = false;
 
 				return ret;
 			}
@@ -118,7 +119,7 @@
 			{
 				conn.Open();
 				<#=ident.Type.Name #> ret = (<#=ident.Type.Name #>)((decimal)cmd.ExecuteScalar());
-				t.Dirty = false;
+				t.IsDirty = false;
 				return ret;
 			}
 			finally

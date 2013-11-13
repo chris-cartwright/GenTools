@@ -6,7 +6,7 @@
 <#@ parameter name="tableType" type="GenProc.TableType" #>
 		public class <#=tableType.NameClean #>
 		{
-			public static DataTable ToDataTable(<#=tableType.NameClean #>[] data)
+			public static DataTable ToDataTable(IEnumerable<<#=tableType.NameClean #>> data)
 			{
 				DataTable dt = new DataTable();
 				<# foreach(Column c in tableType.Columns) { #>dt.Columns.Add("<#=c.Name #>", typeof(<#=c.Type.Name #>));

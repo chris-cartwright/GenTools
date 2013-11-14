@@ -139,4 +139,24 @@
 			set { _<#=col.NameClean #> = value; Changed("_<#=col.NameClean #>"); }
 		}
 		<# } #>
+
+		public virtual void Project(Dictionary<string, object> data)
+		{
+			if(data == null)
+				throw new ArgumentNullException("data");
+
+			<# foreach(Column col in table.Columns) { #>if(data.ContainsKey("<#=col.Name #>"))
+			{
+				<#=col.NameClean #> = <# if(col.IsNull) { #>data["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray){ #>?<# } #><# } else { #>(<#=col.Type.Name #>)data["<#=col.Name #>"]<# } #>;
+			}
+			<# } #>
+
+			IsDirty = false;
+		}
+
+		public virtual void CopyFrom<TOther>(TOther other) where TOther : <#=table.NameClean #><T>
+		{
+			<# foreach(Column col in table.Columns) { #>_<#=col.NameClean #> = other._<#=col.NameClean #>;
+			<# } #>
+		}
 	}

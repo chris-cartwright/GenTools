@@ -120,9 +120,11 @@ namespace UnitTests
 			Execute();
 			LoadFull();
 			Populate();
+			Project();
 			CreateFull();
 			SaveFull();
 			Dirty();
+			CopyFrom();
 		}
 
 		private void LoadTables()
@@ -437,6 +439,22 @@ namespace UnitTests
 			Assert.Throws(Has.InnerException.TypeOf<ArgumentNullException>(), () => method.Invoke(null, new object[] { null }));
 		}
 
+		private void Project()
+		{
+			LoadGeneric("ShouldntChild", "ShouldntSeeID", "ShouldntSee");
+
+			MethodInfo method = LoadMethod("Project");
+			Assert.NotNull(method);
+
+			object obj = Activator.CreateInstance(_type);
+			Assert.NotNull(obj);
+
+			method.Invoke(obj, new object[] { new Dictionary<string, object>() { { "ShouldntSeeID", 2L }, { "ShouldntSee", "This" } } });
+			Assert.AreEqual(2L, _columns.Id.GetValue(obj, null));
+			Assert.AreEqual("This", _columns.Value.GetValue(obj, null));
+			Assert.AreEqual("ShouldntShouldntChild", _type.GetProperty("ProjectString").GetValue(obj, null));
+		}
+
 		private void SaveLoad<T>(MethodInfo save, MethodInfo load, T id, string value)
 		{
 			object row = Activator.CreateInstance(_type);
@@ -618,27 +636,80 @@ namespace UnitTests
 			isDirty();
 		}
 
+		private void CopyFrom()
+		{
+			LoadGeneric("ShouldntChild", "ShouldntSeeID", "ShouldntSee");
+
+			Type shouldnt = LoadType("Shouldnt");
+
+			MethodInfo generic = _type.GetMethods().FirstOrDefault(m => m.Name == "CopyFrom" && m.IsGenericMethod);
+			Assert.NotNull(generic);
+			Assert.IsTrue(generic.IsGenericMethod);
+
+			generic = generic.MakeGenericMethod(shouldnt);
+			Assert.NotNull(generic);
+
+			MethodInfo typed = _type.GetMethods().FirstOrDefault(m => m.Name == "CopyFrom" && !m.IsGenericMethod);
+			Assert.NotNull(typed);
+			Assert.IsFalse(typed.IsGenericMethod);
+
+			PropertyInfo copyFrom = _type.GetProperty("CopyFromString");
+			Assert.NotNull(copyFrom);
+
+			object obj = Activator.CreateInstance(_type);
+			Assert.NotNull(obj);
+
+			PropertyInfo parentValue = shouldnt.GetProperty("ShouldntSee");
+			object parent = Activator.CreateInstance(shouldnt);
+			Assert.NotNull(parent);
+			_columns.Id.SetValue(parent, 3L, null);
+			parentValue.SetValue(parent, "Parent", null);
+
+			generic.Invoke(obj, new[] { parent });
+			Assert.AreEqual(3L, _columns.Id.GetValue(obj, null));
+			Assert.AreEqual("Parent", parentValue.GetValue(obj, null));
+			Assert.AreEqual("ShouldntShouldntChild<T>", copyFrom.GetValue(obj, null));
+
+			copyFrom.SetValue(obj, "", null);
+
+			object child = Activator.CreateInstance(_type);
+			Assert.NotNull(child);
+			_columns.Id.SetValue(child, 4L, null);
+			_columns.Value.SetValue(child, "Child", null);
+
+			typed.Invoke(obj, new[] { child });
+			Assert.AreEqual(4L, _columns.Id.GetValue(obj, null));
+			Assert.AreEqual("Child", _columns.Value.GetValue(obj, null));
+			Assert.AreEqual("ShouldntShouldntChild<T>ShouldntChild", copyFrom.GetValue(obj, null));
+		}
+
 		private MethodInfo LoadMethod(string name)
 		{
-			MethodInfo method = _type.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+			MethodInfo method = _type.GetMethod(name, BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Static);
 			Assert.IsNotNull(method);
 			return method;
 		}
 
 		private void LoadGeneric(string name, string idName, string valueName)
 		{
-			_type = _assembly.GetExportedTypes().FirstOrDefault(t => t.Name == name);
-			Assert.IsNotNull(_type);
+			_type = LoadType(name);
 
 			Utilities.SetConnectionString(ref _type);
 
 			PropertyInfo id = _type.GetProperty(idName);
-			Assert.IsNotNull(id);
+			Assert.NotNull(id);
 
 			PropertyInfo value = _type.GetProperty(valueName);
-			Assert.IsNotNull(value);
+			Assert.NotNull(value);
 
 			_columns = new Columns() { Id = id, Value = value };
+		}
+
+		private Type LoadType(string name)
+		{
+			Type type = _assembly.GetExportedTypes().FirstOrDefault(t => t.Name == name);
+			Assert.NotNull(type);
+			return type;
 		}
 	}
 }

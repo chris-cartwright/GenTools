@@ -1,4 +1,7 @@
 ﻿
+using System;
+using System.Collections.Generic;
+
 namespace Tables.Extra
 {
 	public class BadColumn : BadColumnType<BadColumn>
@@ -65,6 +68,54 @@ namespace Tables.Extra
 		public static bool Save(Shouldnt column)
 		{
 			return SaveFull(column);
+		}
+
+		public string ProjectString { get; set; }
+		public string CopyFromString { get; set; }
+
+		public Shouldnt()
+		{
+			ProjectString = String.Empty;
+			CopyFromString = String.Empty;
+		}
+
+		public override void CopyFrom<TOther>(TOther other)
+		{
+			base.CopyFrom(other);
+			CopyFromString += "Shouldnt";
+		}
+
+		public override void Project(Dictionary<string, object> data)
+		{
+			base.Project(data);
+			ProjectString += "Shouldnt";
+		}
+	}
+
+	public class ShouldntChild : Shouldnt
+	{
+		public new string ShouldntSee
+		{
+			get { return base.ShouldntSee; }
+			private set { base.ShouldntSee = value; }
+		}
+
+		public override void Project(Dictionary<string, object> data)
+		{
+			base.Project(data);
+			ProjectString += "ShouldntChild";
+		}
+
+		public override void CopyFrom<TOther>(TOther other)
+		{
+			base.CopyFrom(other);
+			CopyFromString += "ShouldntChild<T>";
+		}
+
+		public void CopyFrom(ShouldntChild other)
+		{
+			CopyFrom((Shouldnt)other);
+			CopyFromString += "ShouldntChild";
 		}
 	}
 }

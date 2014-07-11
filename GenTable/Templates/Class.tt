@@ -4,14 +4,14 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="table" type="GenTable.Table" #>
-	public interface <#=table.NameClean #>
+	public interface I<#=table.NameClean #>
 	{
 		<# foreach(Column col in table.Columns) { #><#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #> { get; }
 		<# } #>
 	}
 
 	[Serializable]
-	public abstract class <#=table.NameClean #><T> : WrappedTable, ITable where T : <#=table.NameClean #><T>, new()
+	public abstract class <#=table.NameClean #><T> : WrappedTable, I<#=table.NameClean #>, ITable where T : <#=table.NameClean #><T>, new()
 	{
 		<#
 		GenTable.Column ident = table.Identity;

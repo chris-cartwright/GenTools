@@ -49,6 +49,7 @@
     <EmbeddedResource Include="Code\WrappedProcedure.cs" />
     <EmbeddedResource Include="Code\WrappedTable.cs" />
     <EmbeddedResource Include="Code\GenTableExtra.cs" />
+    <EmbeddedResource Include="Code\ITable.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="GenProc.cs" />
     <Compile Include="GenTable.cs" />
@@ -95,7 +96,8 @@
   <PropertyGroup>
     <PreBuildEvent>copy "$(SolutionDir)DatabaseSetup.sql" "$(ProjectDir)\SQL\DatabaseSetup.sql"
 copy "$(SolutionDir)GenProc\Templates\Files\WrappedProcedure.cs" "$(ProjectDir)\Code\WrappedProcedure.cs"
-copy "$(SolutionDir)GenTable\Templates\Files\WrappedTable.cs" "$(ProjectDir)\Code\WrappedTable.cs"</PreBuildEvent>
+copy "$(SolutionDir)GenTable\Templates\Files\WrappedTable.cs" "$(ProjectDir)\Code\WrappedTable.cs"
+copy "$(SolutionDir)GenTable\Templates\Files\ITable.cs" "$(ProjectDir)\Code\ITable.cs"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

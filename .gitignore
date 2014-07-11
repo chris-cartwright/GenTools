@@ -159,3 +159,4 @@ $RECYCLE.BIN/
 /UnitTests/Code/WrappedProcedure.cs
 /UnitTests/Code/WrappedTable.cs
 /packages
+/UnitTests/Code/ITable.cs

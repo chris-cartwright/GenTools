@@ -119,7 +119,6 @@ namespace UnitTests
 			_assembly = Utilities.Compile(_files["GenTable"], Utilities.Include.GenTable);
 			Execute();
 			LoadFull();
-			Populate();
 			Project();
 			CreateFull();
 			SaveFull();
@@ -297,7 +296,7 @@ namespace UnitTests
 
 		private void Execute()
 		{
-			Type[] types = _assembly.GetExportedTypes();
+			Type[] types = _assembly.GetExportedTypes().Where(t => t.IsClass).ToArray();
 			Assert.AreEqual(13, types.Count(t => t.Namespace == "Tables"));
 
 			// ReSharper disable JoinDeclarationAndInitializer
@@ -409,34 +408,6 @@ namespace UnitTests
 			load(3, "Test 3");
 
 			Assert.IsNull(method.InvokeStatic(4));
-		}
-
-		private void Populate()
-		{
-			LoadGeneric("BadColumn", "BadColumnID", "DoesntExist");
-			MethodInfo method = LoadMethod("Populate");
-
-			Action<Dictionary<string, object>, int, string> populate = delegate(Dictionary<string, object> data, int eId, string eValue)
-			{
-				object row = method.InvokeStatic(data);
-				Assert.AreEqual(row.GetType(), _type);
-				Assert.AreEqual(eId, _columns.Id.GetValue(row, null));
-				Assert.AreEqual(eValue, _columns.Value.GetValue(row, null));
-			};
-
-			populate(new Dictionary<string, object>() {
-				{ "BadColumnID", 4 },
-				{ "DoesntExist", "Blarg" }
-			}, 4, "Blarg");
-
-			populate(new Dictionary<string, object>(), default(int), default(string));
-
-			populate(new Dictionary<string, object>() {
-				{ "BadColumnID", 4 }
-			}, 4, default(string));
-
-			// Can't use InvokeStatic. Passing a single null 'disables' the params behaviour
-			Assert.Throws(Has.InnerException.TypeOf<ArgumentNullException>(), () => method.Invoke(null, new object[] { null }));
 		}
 
 		private void Project()
@@ -587,7 +558,7 @@ namespace UnitTests
 			MethodInfo save = LoadMethod("Save");
 			MethodInfo load = LoadMethod("Load");
 			MethodInfo create = LoadMethod("Create");
-			MethodInfo populate = LoadMethod("Populate");
+			MethodInfo project = LoadInstanceMethod("Project");
 			PropertyInfo dirty = _type.GetProperty("IsDirty");
 			PropertyInfo trackChanges = _type.GetProperty("TrackChanges");
 
@@ -624,10 +595,12 @@ namespace UnitTests
 			_columns.Value.SetValue(row, "Blarg 4", null);
 			Assert.AreEqual(4, (byte)create.InvokeStatic(row));
 
-			row = populate.InvokeStatic(new Dictionary<string, object>()
-			{
-				{"UniqueID", (byte) 10},
-				{"Value", "Blarg 5"}
+			project.Invoke(row, new object[] {
+				new Dictionary<string, object>()
+				{
+					{"UniqueID", (byte) 10},
+					{"Value", "Blarg 5"}
+				}
 			});
 			track(true);
 			isClean();
@@ -686,6 +659,13 @@ namespace UnitTests
 		private MethodInfo LoadMethod(string name)
 		{
 			MethodInfo method = _type.GetMethod(name, BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Static);
+			Assert.IsNotNull(method);
+			return method;
+		}
+
+		private MethodInfo LoadInstanceMethod(string name)
+		{
+			MethodInfo method = _type.GetMethod(name, BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
 			Assert.IsNotNull(method);
 			return method;
 		}

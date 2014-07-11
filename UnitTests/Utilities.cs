@@ -82,6 +82,7 @@ namespace UnitTests
 			if (inc == Include.GenTable)
 			{
 				path.Add(ExtractCode("WrappedTable.cs"));
+				path.Add(ExtractCode("ITable.cs"));
 				path.Add(ExtractCode("GenTableExtra.cs"));
 			}
 

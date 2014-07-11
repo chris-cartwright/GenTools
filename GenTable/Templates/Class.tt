@@ -4,25 +4,15 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ parameter name="table" type="GenTable.Table" #>
-	[Serializable]
-	public abstract class <#=table.NameClean #><T> : WrappedTable where T : <#=table.NameClean #><T>, new()
+	public interface <#=table.NameClean #>
 	{
-		public static T Populate(Dictionary<string, object> data)
-		{
-			if(data == null)
-				throw new ArgumentNullException("data");
+		<# foreach(Column col in table.Columns) { #><#=col.Type.Name #><# if(col.IsNull && col.Type.IsValueType && !col.Type.IsArray) { #>?<# } #> <#=col.NameClean #> { get; }
+		<# } #>
+	}
 
-			T ret = new T();
-			<# foreach(Column col in table.Columns) { #>if(data.ContainsKey("<#=col.Name #>"))
-			{
-				ret.<#=col.NameClean #> = <# if(col.IsNull) { #>data["<#=col.Name #>"] as <#=col.Type.Name #><# if(col.Type.IsValueType && !col.Type.IsArray){ #>?<# } #><# } else { #>(<#=col.Type.Name #>)data["<#=col.Name #>"]<# } #>;
-			}
-			<# } #>
-
-			ret.IsDirty = false;
-			return ret;
-		}
-
+	[Serializable]
+	public abstract class <#=table.NameClean #><T> : WrappedTable, ITable where T : <#=table.NameClean #><T>, new()
+	{
 		<#
 		GenTable.Column ident = table.Identity;
 		if(ident != null)
